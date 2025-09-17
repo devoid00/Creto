@@ -14,8 +14,7 @@
 
   <style>
     :root{
-      --bg:#0b0d12; --fg:#e6e9ef; --muted:#a7b0c0; --card:#111522; --b:#1b2236;
-      --accent:#cfe0ff;
+      --bg:#0b0d12; --fg:#e6e9ef; --muted:#a7b0c0; --card:#111522; --b:#1b2236; --accent:#cfe0ff;
     }
     *{ box-sizing:border-box; }
     html, body { height:100%; }
@@ -30,7 +29,7 @@
     /* Wider, edge-friendly layout */
     .wrap{
       width:100%;
-      max-width:1400px;      /* nice and wide */
+      max-width:1400px;
       margin:0 auto;
       padding:32px 24px 64px;
     }
@@ -40,67 +39,44 @@
     h3{ margin:10px 0 6px; font-size: clamp(16px, 2vw, 18px); }
 
     .badge{
-      display:inline-block;
-      margin-bottom:10px;
-      padding:6px 12px;
-      border:1px solid #2a3556;
-      border-radius:999px;
-      color:#dbe6ff;
-      background:#10162b;
-      font-size:12px;
+      display:inline-block; margin-bottom:10px; padding:6px 12px;
+      border:1px solid #2a3556; border-radius:999px; color:#dbe6ff; background:#10162b; font-size:12px;
     }
 
     input{
-      width:100%;
-      max-width:560px;
-      padding:12px 14px;
-      border-radius:12px;
-      border:1px solid #2a3556;
-      background:#10162b;
-      color:var(--fg);
-      outline:none;
-      margin:8px 0 0;
+      width:100%; max-width:560px; padding:12px 14px; border-radius:12px;
+      border:1px solid #2a3556; background:#10162b; color:var(--fg); outline:none; margin:8px 0 0;
     }
     input::placeholder{ color:#8d96aa; }
 
     .grid{
       display:grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap:16px;
-      margin-top:16px;
+      gap:16px; margin-top:16px;
     }
 
     .card{
-      background:var(--card);
-      border:1px solid var(--b);
-      border-radius:14px;
-      padding:12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      min-height: 100%;
+      background:var(--card); border:1px solid var(--b); border-radius:14px; padding:12px;
+      display:flex; flex-direction:column; gap:10px; min-height:100%;
     }
 
     /* Robust image styling */
     .headshot{
-      width:100%;
-      height:300px;               /* control card height; tweak as you like */
-      object-fit:cover;
-      border-radius:10px;
-      border:1px solid var(--b);
-      background:#0f1220;         /* skeleton bg while loading */
-      display:block;
+      width:100%; height:300px; object-fit:cover; border-radius:10px; border:1px solid var(--b);
+      background:#0f1220; display:block;
     }
 
     .muted{ color:var(--muted); }
     a{ color:var(--accent); text-decoration:none; }
     a:hover{ text-decoration:underline; }
 
-    /* Make the page breathe on huge screens */
-    @media (min-width: 1600px){
-      .wrap{ max-width: 1700px; }
-      .grid{ gap: 18px; }
+    /* Infinite scroll sentinel + button */
+    .sentinel{ height: 1px; }
+    .more-wrap{ display:flex; justify-content:center; margin:18px 0 8px; }
+    .more-btn{
+      padding:10px 14px; border-radius:10px; border:1px solid #2a3556; background:#10162b; color:var(--fg); cursor:pointer;
     }
+    .more-btn[disabled]{ opacity:.6; cursor:default; }
   </style>
 </head>
 <body>
@@ -111,13 +87,21 @@
 
     <h2>Senate</h2>
     <div id="sen" class="grid"></div>
+    <div class="more-wrap"><button id="senMore" class="more-btn">Load more</button></div>
+    <div id="senSentinel" class="sentinel"></div>
 
     <h2>House</h2>
     <div id="rep" class="grid"></div>
+    <div class="more-wrap"><button id="repMore" class="more-btn">Load more</button></div>
+    <div id="repSentinel" class="sentinel"></div>
   </div>
 
   <script>
-    // Create a resilient <img> that tries direct -> proxy -> placeholder
+    // Batch sizes
+    const FIRST_BATCH = 20;
+    const NEXT_BATCH  = 10;
+
+    // Always go through an image proxy first (reliable), then placeholder if even that fails.
     function buildHeadshot(url){
       const img = document.createElement('img');
       img.className = 'headshot';
@@ -125,27 +109,18 @@
       img.referrerPolicy = 'no-referrer';
       img.alt = '';
 
-      // direct
-      img.src = url;
+      const path = url.replace(/^https?:\/\//, '');
+      img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(path);
 
-      // on error: proxy, then placeholder
       img.addEventListener('error', function onErr(){
         img.removeEventListener('error', onErr);
-
-        if (!img.dataset.triedProxy) {
-          img.dataset.triedProxy = '1';
-          const path = img.src.replace(/^https?:\/\//, '');
-          img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(path);
-        } else {
-          img.src = 'https://placehold.co/450x550?text=No+Photo';
-        }
+        img.src = 'https://placehold.co/450x550?text=No+Photo';
       }, { once:true });
 
       return img;
     }
 
     function cardHTML(m){
-      // We'll insert the <img> via DOM so the onerror logic attaches cleanly
       return `
         <div class="card">
           <div class="image-wrap"></div>
@@ -159,20 +134,12 @@
       `;
     }
 
-    function render(arr, mount){
-      // Build cards as HTML first, then attach images with fallbacks
-      mount.innerHTML = arr.map(cardHTML).join('');
-
-      // Attach images
+    function attachImages(members, mount){
       const cards = mount.querySelectorAll('.card');
-      arr.forEach((m, i) => {
-        const wrap = cards[i].querySelector('.image-wrap');
-        if (m.photo) {
-          wrap.appendChild(buildHeadshot(m.photo));
-        } else {
-          // immediate placeholder if no photo field
-          wrap.appendChild(buildHeadshot('https://placehold.co/450x550?text=No+Photo'));
-        }
+      members.forEach((m, i) => {
+        const wrap = cards[cards.length - members.length + i].querySelector('.image-wrap');
+        if (m.photo) wrap.appendChild(buildHeadshot(m.photo));
+        else wrap.appendChild(buildHeadshot('https://placehold.co/450x550?text=No+Photo'));
       });
     }
 
@@ -185,8 +152,58 @@
         .includes(needle);
     }
 
+    // Section controller with pagination
+    function makeSectionController({data, mount, moreBtn, sentinel}){
+      let filtered = data.slice();
+      let index = 0;
+
+      function clear(){
+        mount.innerHTML = '';
+        index = 0;
+        moreBtn.disabled = false;
+      }
+
+      function renderNext(count){
+        if (index >= filtered.length) {
+          moreBtn.disabled = true;
+          return;
+        }
+        const slice = filtered.slice(index, index + count);
+        const html  = slice.map(cardHTML).join('');
+        mount.insertAdjacentHTML('beforeend', html);
+        attachImages(slice, mount);
+        index += slice.length;
+        if (index >= filtered.length) moreBtn.disabled = true;
+      }
+
+      function applyFilter(fn){
+        filtered = data.filter(fn);
+        clear();
+        renderNext(FIRST_BATCH);
+      }
+
+      // Button fallback
+      moreBtn.addEventListener('click', () => renderNext(NEXT_BATCH));
+
+      // Infinite scroll: when sentinel appears, load more
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach(e => {
+            if (e.isIntersecting && !moreBtn.disabled) renderNext(NEXT_BATCH);
+          });
+        }, { rootMargin: '800px 0px' });
+        io.observe(sentinel);
+      }
+
+      // initial
+      renderNext(FIRST_BATCH);
+
+      return { applyFilter, reset: () => { filtered = data.slice(); clear(); renderNext(FIRST_BATCH); } };
+    }
+
     async function main(){
-      const res = await fetch("./members-current.json");
+      // Use GH Pages JSON; relative also works when hosted there
+      const res = await fetch("./members-current.json", { cache: 'no-store' });
       const members = await res.json();
 
       const groups = {
@@ -194,19 +211,25 @@
         rep: members.filter(m => m.chamber === "rep"),
       };
 
-      const root = {
-        sen: document.getElementById("sen"),
-        rep: document.getElementById("rep"),
-      };
+      const senCtl = makeSectionController({
+        data: groups.sen,
+        mount: document.getElementById('sen'),
+        moreBtn: document.getElementById('senMore'),
+        sentinel: document.getElementById('senSentinel'),
+      });
 
-      render(groups.sen, root.sen);
-      render(groups.rep, root.rep);
+      const repCtl = makeSectionController({
+        data: groups.rep,
+        mount: document.getElementById('rep'),
+        moreBtn: document.getElementById('repMore'),
+        sentinel: document.getElementById('repSentinel'),
+      });
 
       const input = document.getElementById("q");
       input.addEventListener("input", () => {
         const f = filterFn(input.value);
-        render(groups.sen.filter(f), root.sen);
-        render(groups.rep.filter(f), root.rep);
+        senCtl.applyFilter(f);
+        repCtl.applyFilter(f);
       });
     }
 
