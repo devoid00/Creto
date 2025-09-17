@@ -3,241 +3,237 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Civic Index — Who Represents Me?</title>
-
-  <!-- Allow external images we depend on -->
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self';
-                 img-src 'self' https://theunitedstates.io https://images.weserv.nl https://placehold.co data: blob:;
-                 style-src 'self' 'unsafe-inline';
-                 script-src 'self' 'unsafe-inline'">
-
+  <title>Civic Index — Who’s in Office</title>
   <style>
     :root{
-      --bg:#0b0d12; --fg:#e6e9ef; --muted:#a7b0c0; --card:#111522; --b:#1b2236; --accent:#cfe0ff;
+      --bg:#0b0d12; --fg:#e6e9ef; --muted:#a7b0c0;
+      --card:#111522; --b:#1b2236; --accent:#8ab4ff;
     }
-    *{ box-sizing:border-box; }
-    html, body { height:100%; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
     body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:var(--bg);
-      color:var(--fg);
-      line-height:1.45;
+      margin:0; background:var(--bg); color:var(--fg);
+      font-family:system-ui, Segoe UI, Roboto, Arial, sans-serif;
     }
 
+    /* Full-bleed container so it can fill inside iframes/themes */
     .wrap{
       width:100%;
-      max-width:1200px;
+      max-width:1400px;
       margin:0 auto;
-      padding:32px 24px 64px;
+      padding:24px 20px;
     }
 
-    h1{ margin:0 0 16px; font-size: clamp(24px, 3.2vw, 36px); }
-    h2{ margin:28px 0 10px; font-size: clamp(18px, 2.2vw, 22px); }
-    h3{ margin:10px 0 6px; font-size: clamp(16px, 2vw, 18px); }
-
+    .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
     .badge{
-      display:inline-block; margin-bottom:10px; padding:6px 12px;
-      border:1px solid #2a3556; border-radius:999px; color:#dbe6ff; background:#10162b; font-size:12px;
+      display:inline-block; padding:4px 10px; border:1px solid #2a3556;
+      border-radius:999px; color:#dbe6ff; background:#10162b; font-size:12px
     }
+    h1{margin:10px 0 14px; font-size:clamp(22px, 2.6vw, 34px)}
 
-    .panel{
-      background:#0f1426;
-      border:1px solid var(--b);
-      border-radius:14px;
-      padding:16px;
-      margin:10px 0 20px;
+    label{font-size:14px; color:var(--muted)}
+    select, input[type="text"]{
+      padding:10px 12px; border-radius:10px; border:1px solid #2a3556;
+      background:#10162b; color:var(--fg); outline:none
     }
+    select{min-width:190px}
+    .hint{color:var(--muted); font-size:13px; margin-top:8px}
 
-    label{ display:block; margin:0 0 6px; color:var(--muted); }
-    select, input{
-      width:100%;
-      max-width:480px;
-      padding:12px 14px;
-      border-radius:12px;
-      border:1px solid #2a3556;
-      background:#10162b; color:var(--fg);
-      outline:none;
-    }
+    .section{margin-top:20px}
+    .section h2{margin:18px 0 8px; font-size:clamp(18px,2vw,22px)}
 
     .grid{
       display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap:16px; margin-top:16px;
+      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+      gap:12px;
+      margin-top:10px
     }
-
     .card{
-      background:var(--card); border:1px solid var(--b); border-radius:14px; padding:12px;
-      display:flex; flex-direction:column; gap:10px; min-height:100%;
+      background:var(--card); border:1px solid var(--b);
+      border-radius:14px; padding:12px; min-height:100%;
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .muted{color:var(--muted)}
+    .name{font-weight:600; line-height:1.2}
+    .links{margin-top:auto}
+    .links a{color:var(--accent); text-decoration:none}
+    .links a:hover{text-decoration:underline}
+
+    img.thumb{
+      width:100%; aspect-ratio:9/11; object-fit:cover;
+      border-radius:10px; border:1px solid var(--b);
+      background:#0f1424;
     }
 
-    .headshot{
-      width:100%; height:300px; object-fit:cover; border-radius:10px; border:1px solid var(--b);
-      background:#0f1220; display:block;
+    /* simple skeleton while loading */
+    .skeleton{
+      background:linear-gradient(90deg,#141a2b 25%,#182033 37%,#141a2b 63%);
+      background-size:400% 100%;
+      animation:shine 1.2s ease-in-out infinite;
     }
+    @keyframes shine { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-    .muted{ color:var(--muted); }
-    .meta { display:flex; gap:8px; flex-wrap:wrap; }
-    .pill { border:1px solid #2a3556; border-radius:999px; padding:2px 8px; font-size:12px; color:#dbe6ff; background:#10162b; }
-    a{ color:var(--accent); text-decoration:none; }
-    a:hover{ text-decoration:underline; }
-
-    .promises{ margin-top:8px; }
-    .promise-item{ padding:8px; border:1px dashed #2a3556; border-radius:10px; margin-top:6px; }
-    .empty{ color:#8490a8; font-style:italic; }
+    /* make it breathe a bit on very small screens */
+    @media (max-width:520px){
+      .wrap{padding:16px 12px}
+      select{width:100%}
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <span class="badge">Live directory (auto-refreshed)</span>
-    <h1>Who represents you?</h1>
+    <h1>Who’s in Public Office — U.S. Congress</h1>
 
-    <div class="panel">
-      <label for="state">Select your state</label>
-      <select id="state"></select>
-      <div style="height:10px"></div>
-      <label for="q">Optional: filter by name, party, district…</label>
-      <input id="q" placeholder="e.g., Smith, D, 7" />
+    <div class="row" style="margin:6px 0 12px">
+      <div>
+        <label for="state">Choose your state</label><br/>
+        <select id="state">
+          <option value="">— Select —</option>
+        </select>
+      </div>
+      <div>
+        <label for="q">Filter by name / party / district</label><br/>
+        <input id="q" type="text" placeholder="e.g., Murkowski, D, 3…" />
+      </div>
+    </div>
+    <div class="hint">Pick a state to load its Senators and Representatives. Photos lazy-load; a placeholder appears if an image is unavailable.</div>
+
+    <div class="section">
+      <h2>Senate</h2>
+      <div id="sen" class="grid"></div>
     </div>
 
-    <h2>Senate</h2>
-    <div id="sen" class="grid"></div>
-
-    <h2>House</h2>
-    <div id="rep" class="grid"></div>
+    <div class="section">
+      <h2>House</h2>
+      <div id="rep" class="grid"></div>
+    </div>
   </div>
 
   <script>
-    const STATES = [
-      ["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],["CO","Colorado"],
-      ["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],["HI","Hawaii"],["ID","Idaho"],
-      ["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],
-      ["ME","Maine"],["MD","Maryland"],["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],
-      ["MO","Missouri"],["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],
-      ["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],["OK","Oklahoma"],
-      ["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],["SD","South Dakota"],
-      ["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],["VA","Virginia"],["WA","Washington"],
-      ["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"],["DC","District of Columbia"],["PR","Puerto Rico"]
-    ];
+  // Tiny inline SVG placeholder (dark silhouette)
+  const PLACEHOLDER =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 550">
+        <rect width="100%" height="100%" fill="#0f1424"/>
+        <circle cx="225" cy="190" r="80" fill="#1b2236"/>
+        <rect x="90" y="300" width="270" height="180" rx="20" fill="#1b2236"/>
+      </svg>`);
 
-    // Always go through an image proxy first (reliable), then placeholder if even that fails.
-    function buildHeadshot(url){
-      const img = document.createElement('img');
-      img.className = 'headshot';
-      img.loading = 'lazy';
-      img.referrerPolicy = 'no-referrer';
-      img.alt = '';
+  const S = {
+    sen: document.getElementById('sen'),
+    rep: document.getElementById('rep'),
+    stateSel: document.getElementById('state'),
+    q: document.getElementById('q')
+  };
 
-      const path = (url || '').replace(/^https?:\/\//, '');
-      img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(path || 'theunitedstates.io/does-not-exist');
+  // Card renderer with lazy image + fallback
+  const card = (m) => `
+    <div class="card">
+      <img class="thumb" loading="lazy"
+           src="${PLACEHOLDER}"
+           data-src="${m.photo || ''}"
+           alt="${m.official_full || ''}"
+           onerror="this.onerror=null;this.src='${PLACEHOLDER}'" />
+      <div class="name">${m.official_full || ''}</div>
+      <div class="muted">${m.chamber === 'sen' ? 'Senator' : 'Representative'} · ${m.state}${m.district ? ('-' + m.district) : ''}</div>
+      <div class="muted">${m.party || ''}</div>
+      <div class="links">
+        ${m.url ? `<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>` : ''}
+      </div>
+    </div>
+  `;
 
-      img.addEventListener('error', function onErr(){
-        img.removeEventListener('error', onErr);
-        img.src = 'https://placehold.co/450x550?text=No+Photo';
-      }, { once:true });
+  function render(list, el){
+    el.innerHTML = list.map(card).join('');
+    // swap data-src → src for lazy load after insertion
+    const imgs = el.querySelectorAll('img[data-src]');
+    imgs.forEach(img => {
+      const real = img.getAttribute('data-src');
+      if (real) img.src = real;
+      img.removeAttribute('data-src');
+    });
+  }
 
-      return img;
+  function skeleton(el, count=8){
+    el.innerHTML = Array.from({length:count}).map(() => `
+      <div class="card">
+        <div class="thumb skeleton"></div>
+        <div class="skeleton" style="height:14px; width:70%; border-radius:6px"></div>
+        <div class="skeleton" style="height:12px; width:55%; border-radius:6px"></div>
+        <div class="skeleton" style="height:12px; width:35%; border-radius:6px"></div>
+      </div>`).join('');
+  }
+
+  // Load state index for dropdown
+  async function loadStateIndex(){
+    const res = await fetch('./api/states/index.json', {cache:'no-store'});
+    if (!res.ok) throw new Error('Failed to load state index');
+    const states = await res.json();
+    states.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.state;
+      opt.textContent = s.state;
+      S.stateSel.appendChild(opt);
+    });
+  }
+
+  // Fetch members for a state and render
+  async function loadState(st){
+    if (!st){
+      S.sen.innerHTML = '';
+      S.rep.innerHTML = '';
+      return;
     }
+    skeleton(S.sen); skeleton(S.rep);
 
-    function cardHTML(m, promisesFor) {
-      const site = m.url ? `<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>` : '';
-      const promises = promisesFor[m.bioguide] || [];
-      const promisesHtml = promises.length
-        ? promises.map(p => `
-            <div class="promise-item">
-              <div><strong>${p.title || "Promise"}</strong></div>
-              <div class="muted">${p.summary || ""}</div>
-              ${p.source ? `<div><a href="${p.source}" target="_blank" rel="noopener">source ↗</a></div>` : ""}
-            </div>
-          `).join('')
-        : `<div class="empty">No promises tracked yet.</div>`;
-
-      return `
-        <div class="card">
-          <div class="image-wrap"></div>
-          <h3>${m.official_full}</h3>
-          <div class="meta">
-            <span class="pill">${m.chamber === "sen" ? "Senator" : "Representative"}</span>
-            <span class="pill">${m.state}${m.district ? ("-" + m.district) : ""}</span>
-            ${m.party ? `<span class="pill">${m.party}</span>` : ""}
-          </div>
-          ${site}
-          <div class="promises">
-            <div class="muted">Promises</div>
-            ${promisesHtml}
-          </div>
-        </div>
-      `;
+    const res = await fetch(`./api/states/${encodeURIComponent(st)}.json`, {cache:'no-store'});
+    if (!res.ok){
+      S.sen.innerHTML = '<div class="muted">Could not load Senate.</div>';
+      S.rep.innerHTML = '<div class="muted">Could not load House.</div>';
+      return;
     }
+    const data = await res.json();
+    window.__STATE_MEMBERS__ = {
+      sen: data.sen || [],
+      rep: data.rep || []
+    };
+    // initial render (unfiltered)
+    render(window.__STATE_MEMBERS__.sen, S.sen);
+    render(window.__STATE_MEMBERS__.rep, S.rep);
+  }
 
-    function attachImages(members, mount){
-      const cards = mount.querySelectorAll('.card');
-      members.forEach((m, i) => {
-        const wrap = cards[i].querySelector('.image-wrap');
-        wrap.appendChild(buildHeadshot(m.photo));
-      });
-    }
+  // Text filter
+  function applyFilter(){
+    const q = (S.q.value || '').trim().toLowerCase();
+    const filt = (m) => ([
+      m.official_full, m.state, m.party, (m.district||'')
+    ].join(' ').toLowerCase().includes(q));
 
-    function renderList(arr, mount, promises){
-      mount.innerHTML = arr.map(m => cardHTML(m, promises)).join('');
-      attachImages(arr, mount);
-    }
+    const src = window.__STATE_MEMBERS__ || {sen:[], rep:[]};
+    render(src.sen.filter(filt), S.sen);
+    render(src.rep.filter(filt), S.rep);
+  }
 
-    function filterFn(q){
-      const needle = q.trim().toLowerCase();
-      if (!needle) return () => true;
-      return (m) => [m.official_full, m.state, m.party, (m.district || "")]
-        .join(" ")
-        .toLowerCase()
-        .includes(needle);
-    }
+  // Wire events
+  S.stateSel.addEventListener('change', e => loadState(e.target.value));
+  S.q.addEventListener('input', () => applyFilter());
 
-    async function loadJSON(url){
-      const r = await fetch(url, { cache: 'no-store' });
-      if (!r.ok) throw new Error("Fetch failed " + r.status);
-      return r.json();
-    }
-
-    async function main(){
-      // Load members + optional promises file
-      const [members, promises] = await Promise.all([
-        loadJSON("./members-current.json"),
-        // If promises.json is missing, fall back to empty.
-        loadJSON("./promises.json").catch(()=> ({})),
-      ]);
-
-      // Populate state dropdown
-      const sel = document.getElementById('state');
-      sel.innerHTML = `<option value="">Select a state…</option>` +
-        STATES.map(([code,name]) => `<option value="${code}">${name}</option>`).join('');
-
-      const senRoot = document.getElementById('sen');
-      const repRoot = document.getElementById('rep');
-      const q = document.getElementById('q');
-
-      function update(){
-        const code = sel.value;
-        const f = filterFn(q.value);
-        if (!code){
-          senRoot.innerHTML = '<div class="muted">Select a state to see senators.</div>';
-          repRoot.innerHTML = '<div class="muted">Select a state to see representatives.</div>';
-          return;
-        }
-        const sen = members.filter(m => m.chamber === "sen" && m.state === code).filter(f);
-        const rep = members.filter(m => m.chamber === "rep" && m.state === code).filter(f);
-        renderList(sen, senRoot, promises);
-        renderList(rep, repRoot, promises);
+  // Boot
+  (async function init(){
+    try{
+      await loadStateIndex();
+      // Optional: preselect based on URL hash e.g. #AK
+      const hashState = (location.hash || '').replace('#','').toUpperCase();
+      if (hashState){
+        S.stateSel.value = hashState;
+        await loadState(hashState);
       }
-
-      sel.addEventListener('change', update);
-      q.addEventListener('input', update);
-
-      // Initial state (empty)
-      update();
+    }catch(err){
+      console.error(err);
     }
-
-    main();
+  })();
   </script>
 </body>
 </html>
