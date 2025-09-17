@@ -7,13 +7,11 @@ on:
   schedule:
     - cron: "23 5 * * *"   # nightly UTC (optional)
 
-# 🔴 IMPORTANT: permissions must be at the TOP LEVEL (not per-job)
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# optional but tidy: prevent overlapping deploys
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -37,10 +35,14 @@ jobs:
           CONGRESS_GOV_API_KEY: ${{ secrets.CONGRESS_GOV_API_KEY }}
         run: python data-job/fetch_members.py
 
+      - name: Build static API
+        run: python data-job/build_api.py
+
       - name: Verify site files exist
         run: |
           test -f web/index.html
           test -f web/members-current.json
+          test -f web/api/states/index.json
           echo "Site files present."
 
       - name: Upload site artifact (web/)
