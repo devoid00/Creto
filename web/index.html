@@ -1,20 +1,106 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Civic Index — Who’s in Office</title>
+
+  <!-- Allow external images we depend on -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' https://theunitedstates.io https://images.weserv.nl https://placehold.co data: blob:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self' 'unsafe-inline'">
+
   <style>
-    :root{--bg:#0b0d12;--fg:#e6e9ef;--muted:#a7b0c0;--card:#111522;--b:#1b2236}
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg)}
-    .wrap{max-width:1100px;margin:0 auto;padding:24px}
-    input{width:100%;max-width:480px;padding:10px 12px;border-radius:10px;border:1px solid #2a3556;background:#10162b;color:var(--fg)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:16px}
-    .card{background:var(--card);border:1px solid var(--b);border-radius:14px;padding:12px}
-    .muted{color:var(--muted)} img{width:100%;aspect-ratio:9/11;object-fit:cover;border-radius:10px;border:1px solid var(--b)}
-    h1{margin:0 0 12px} h2{margin:24px 0 8px}
-    .badge{display:inline-block;padding:4px 10px;border:1px solid #2a3556;border-radius:999px;color:#dbe6ff;background:#10162b}
-    a{color:#cfe0ff}
+    :root{
+      --bg:#0b0d12; --fg:#e6e9ef; --muted:#a7b0c0; --card:#111522; --b:#1b2236;
+      --accent:#cfe0ff;
+    }
+    *{ box-sizing:border-box; }
+    html, body { height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--fg);
+      line-height:1.45;
+    }
+
+    /* Wider, edge-friendly layout */
+    .wrap{
+      width:100%;
+      max-width:1400px;      /* nice and wide */
+      margin:0 auto;
+      padding:32px 24px 64px;
+    }
+
+    h1{ margin:0 0 16px; font-size: clamp(24px, 3.2vw, 36px); }
+    h2{ margin:28px 0 10px; font-size: clamp(18px, 2.2vw, 22px); }
+    h3{ margin:10px 0 6px; font-size: clamp(16px, 2vw, 18px); }
+
+    .badge{
+      display:inline-block;
+      margin-bottom:10px;
+      padding:6px 12px;
+      border:1px solid #2a3556;
+      border-radius:999px;
+      color:#dbe6ff;
+      background:#10162b;
+      font-size:12px;
+    }
+
+    input{
+      width:100%;
+      max-width:560px;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid #2a3556;
+      background:#10162b;
+      color:var(--fg);
+      outline:none;
+      margin:8px 0 0;
+    }
+    input::placeholder{ color:#8d96aa; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap:16px;
+      margin-top:16px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--b);
+      border-radius:14px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height: 100%;
+    }
+
+    /* Robust image styling */
+    .headshot{
+      width:100%;
+      height:300px;               /* control card height; tweak as you like */
+      object-fit:cover;
+      border-radius:10px;
+      border:1px solid var(--b);
+      background:#0f1220;         /* skeleton bg while loading */
+      display:block;
+    }
+
+    .muted{ color:var(--muted); }
+    a{ color:var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+
+    /* Make the page breathe on huge screens */
+    @media (min-width: 1600px){
+      .wrap{ max-width: 1700px; }
+      .grid{ gap: 18px; }
+    }
   </style>
 </head>
 <body>
@@ -22,44 +108,109 @@
     <span class="badge">Live directory (auto-refreshed)</span>
     <h1>Who’s in Public Office — U.S. Congress</h1>
     <input id="q" placeholder="Search name, state, party, district…">
+
     <h2>Senate</h2>
     <div id="sen" class="grid"></div>
+
     <h2>House</h2>
     <div id="rep" class="grid"></div>
   </div>
+
   <script>
+    // Create a resilient <img> that tries direct -> proxy -> placeholder
+    function buildHeadshot(url){
+      const img = document.createElement('img');
+      img.className = 'headshot';
+      img.loading = 'lazy';
+      img.referrerPolicy = 'no-referrer';
+      img.alt = '';
+
+      // direct
+      img.src = url;
+
+      // on error: proxy, then placeholder
+      img.addEventListener('error', function onErr(){
+        img.removeEventListener('error', onErr);
+
+        if (!img.dataset.triedProxy) {
+          img.dataset.triedProxy = '1';
+          const path = img.src.replace(/^https?:\/\//, '');
+          img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(path);
+        } else {
+          img.src = 'https://placehold.co/450x550?text=No+Photo';
+        }
+      }, { once:true });
+
+      return img;
+    }
+
+    function cardHTML(m){
+      // We'll insert the <img> via DOM so the onerror logic attaches cleanly
+      return `
+        <div class="card">
+          <div class="image-wrap"></div>
+          <h3>${m.official_full}</h3>
+          <div class="muted">
+            ${m.chamber === "sen" ? "Senator" : "Representative"} · ${m.state}${m.district ? ("-" + m.district) : ""}
+          </div>
+          <div class="muted">${m.party || ""}</div>
+          ${m.url ? `<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>` : ""}
+        </div>
+      `;
+    }
+
+    function render(arr, mount){
+      // Build cards as HTML first, then attach images with fallbacks
+      mount.innerHTML = arr.map(cardHTML).join('');
+
+      // Attach images
+      const cards = mount.querySelectorAll('.card');
+      arr.forEach((m, i) => {
+        const wrap = cards[i].querySelector('.image-wrap');
+        if (m.photo) {
+          wrap.appendChild(buildHeadshot(m.photo));
+        } else {
+          // immediate placeholder if no photo field
+          wrap.appendChild(buildHeadshot('https://placehold.co/450x550?text=No+Photo'));
+        }
+      });
+    }
+
+    function filterFn(q){
+      const needle = q.trim().toLowerCase();
+      if (!needle) return () => true;
+      return (m) => [m.official_full, m.state, m.party, (m.district || "")]
+        .join(" ")
+        .toLowerCase()
+        .includes(needle);
+    }
+
     async function main(){
       const res = await fetch("./members-current.json");
       const members = await res.json();
+
       const groups = {
-        sen: members.filter(m=>m.chamber==="sen"),
-        rep: members.filter(m=>m.chamber==="rep")
+        sen: members.filter(m => m.chamber === "sen"),
+        rep: members.filter(m => m.chamber === "rep"),
       };
-      const root = { sen: document.getElementById("sen"), rep: document.getElementById("rep") };
-      const card = (m)=>`
-        <div class="card">
-          ${m.photo ? `<img src="${m.photo}" alt="">` : ""}
-          <h3>${m.official_full}</h3>
-          <div class="muted">${m.chamber==="sen"?"Senator":"Representative"} · ${m.state}${m.district?("-"+m.district):""}</div>
-          <div class="muted">${m.party||""}</div>
-          ${m.url?`<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>`:""}
-        </div>`;
-      const render = (arr, el)=> el.innerHTML = arr.map(card).join("");
-      const filter = (q)=> (m)=>[m.official_full,m.state,m.party,(m.district||"")].join(" ").toLowerCase().includes(q);
-      render(groups.sen, root.sen); render(groups.rep, root.rep);
-      document.getElementById("q").addEventListener("input", e=>{
-        const q = e.target.value.trim().toLowerCase();
-        render(groups.sen.filter(filter(q)), root.sen);
-        render(groups.rep.filter(filter(q)), root.rep);
+
+      const root = {
+        sen: document.getElementById("sen"),
+        rep: document.getElementById("rep"),
+      };
+
+      render(groups.sen, root.sen);
+      render(groups.rep, root.rep);
+
+      const input = document.getElementById("q");
+      input.addEventListener("input", () => {
+        const f = filterFn(input.value);
+        render(groups.sen.filter(f), root.sen);
+        render(groups.rep.filter(f), root.rep);
       });
     }
+
     main();
   </script>
 </body>
 </html>
-
-
-
-
-
-
