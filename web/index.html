@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Civic Index — Who’s in Office</title>
+  <style>
+    :root{--bg:#0b0d12;--fg:#e6e9ef;--muted:#a7b0c0;--card:#111522;--b:#1b2236}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg)}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
+    input{width:100%;max-width:480px;padding:10px 12px;border-radius:10px;border:1px solid #2a3556;background:#10162b;color:var(--fg)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:16px}
+    .card{background:var(--card);border:1px solid var(--b);border-radius:14px;padding:12px}
+    .muted{color:var(--muted)} img{width:100%;aspect-ratio:9/11;object-fit:cover;border-radius:10px;border:1px solid var(--b)}
+    h1{margin:0 0 12px} h2{margin:24px 0 8px}
+    .badge{display:inline-block;padding:4px 10px;border:1px solid #2a3556;border-radius:999px;color:#dbe6ff;background:#10162b}
+    a{color:#cfe0ff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <span class="badge">Live directory (auto-refreshed)</span>
+    <h1>Who’s in Public Office — U.S. Congress</h1>
+    <input id="q" placeholder="Search name, state, party, district…">
+    <h2>Senate</h2>
+    <div id="sen" class="grid"></div>
+    <h2>House</h2>
+    <div id="rep" class="grid"></div>
+  </div>
+  <script>
+    async function main(){
+      const res = await fetch("./members-current.json");
+      const members = await res.json();
+      const groups = {
+        sen: members.filter(m=>m.chamber==="sen"),
+        rep: members.filter(m=>m.chamber==="rep")
+      };
+      const root = { sen: document.getElementById("sen"), rep: document.getElementById("rep") };
+      const card = (m)=>`
+        <div class="card">
+          ${m.photo ? `<img src="${m.photo}" alt="">` : ""}
+          <h3>${m.official_full}</h3>
+          <div class="muted">${m.chamber==="sen"?"Senator":"Representative"} · ${m.state}${m.district?("-"+m.district):""}</div>
+          <div class="muted">${m.party||""}</div>
+          ${m.url?`<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>`:""}
+        </div>`;
+      const render = (arr, el)=> el.innerHTML = arr.map(card).join("");
+      const filter = (q)=> (m)=>[m.official_full,m.state,m.party,(m.district||"")].join(" ").toLowerCase().includes(q);
+      render(groups.sen, root.sen); render(groups.rep, root.rep);
+      document.getElementById("q").addEventListener("input", e=>{
+        const q = e.target.value.trim().toLowerCase();
+        render(groups.sen.filter(filter(q)), root.sen);
+        render(groups.rep.filter(filter(q)), root.rep);
+      });
+    }
+    main();
+  </script>
+</body>
+</html>
