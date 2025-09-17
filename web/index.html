@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Civic Index — Who’s in Office</title>
+  <title>Civic Index — Who Represents Me?</title>
 
   <!-- Allow external images we depend on -->
   <meta http-equiv="Content-Security-Policy"
@@ -26,10 +26,9 @@
       line-height:1.45;
     }
 
-    /* Wider, edge-friendly layout */
     .wrap{
       width:100%;
-      max-width:1400px;
+      max-width:1200px;
       margin:0 auto;
       padding:32px 24px 64px;
     }
@@ -43,11 +42,24 @@
       border:1px solid #2a3556; border-radius:999px; color:#dbe6ff; background:#10162b; font-size:12px;
     }
 
-    input{
-      width:100%; max-width:560px; padding:12px 14px; border-radius:12px;
-      border:1px solid #2a3556; background:#10162b; color:var(--fg); outline:none; margin:8px 0 0;
+    .panel{
+      background:#0f1426;
+      border:1px solid var(--b);
+      border-radius:14px;
+      padding:16px;
+      margin:10px 0 20px;
     }
-    input::placeholder{ color:#8d96aa; }
+
+    label{ display:block; margin:0 0 6px; color:var(--muted); }
+    select, input{
+      width:100%;
+      max-width:480px;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid #2a3556;
+      background:#10162b; color:var(--fg);
+      outline:none;
+    }
 
     .grid{
       display:grid;
@@ -60,46 +72,54 @@
       display:flex; flex-direction:column; gap:10px; min-height:100%;
     }
 
-    /* Robust image styling */
     .headshot{
       width:100%; height:300px; object-fit:cover; border-radius:10px; border:1px solid var(--b);
       background:#0f1220; display:block;
     }
 
     .muted{ color:var(--muted); }
+    .meta { display:flex; gap:8px; flex-wrap:wrap; }
+    .pill { border:1px solid #2a3556; border-radius:999px; padding:2px 8px; font-size:12px; color:#dbe6ff; background:#10162b; }
     a{ color:var(--accent); text-decoration:none; }
     a:hover{ text-decoration:underline; }
 
-    /* Infinite scroll sentinel + button */
-    .sentinel{ height: 1px; }
-    .more-wrap{ display:flex; justify-content:center; margin:18px 0 8px; }
-    .more-btn{
-      padding:10px 14px; border-radius:10px; border:1px solid #2a3556; background:#10162b; color:var(--fg); cursor:pointer;
-    }
-    .more-btn[disabled]{ opacity:.6; cursor:default; }
+    .promises{ margin-top:8px; }
+    .promise-item{ padding:8px; border:1px dashed #2a3556; border-radius:10px; margin-top:6px; }
+    .empty{ color:#8490a8; font-style:italic; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <span class="badge">Live directory (auto-refreshed)</span>
-    <h1>Who’s in Public Office — U.S. Congress</h1>
-    <input id="q" placeholder="Search name, state, party, district…">
+    <h1>Who represents you?</h1>
+
+    <div class="panel">
+      <label for="state">Select your state</label>
+      <select id="state"></select>
+      <div style="height:10px"></div>
+      <label for="q">Optional: filter by name, party, district…</label>
+      <input id="q" placeholder="e.g., Smith, D, 7" />
+    </div>
 
     <h2>Senate</h2>
     <div id="sen" class="grid"></div>
-    <div class="more-wrap"><button id="senMore" class="more-btn">Load more</button></div>
-    <div id="senSentinel" class="sentinel"></div>
 
     <h2>House</h2>
     <div id="rep" class="grid"></div>
-    <div class="more-wrap"><button id="repMore" class="more-btn">Load more</button></div>
-    <div id="repSentinel" class="sentinel"></div>
   </div>
 
   <script>
-    // Batch sizes
-    const FIRST_BATCH = 20;
-    const NEXT_BATCH  = 10;
+    const STATES = [
+      ["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],["CO","Colorado"],
+      ["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],["HI","Hawaii"],["ID","Idaho"],
+      ["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],
+      ["ME","Maine"],["MD","Maryland"],["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],
+      ["MO","Missouri"],["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],
+      ["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],["OK","Oklahoma"],
+      ["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],["SD","South Dakota"],
+      ["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],["VA","Virginia"],["WA","Washington"],
+      ["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"],["DC","District of Columbia"],["PR","Puerto Rico"]
+    ];
 
     // Always go through an image proxy first (reliable), then placeholder if even that fails.
     function buildHeadshot(url){
@@ -109,8 +129,8 @@
       img.referrerPolicy = 'no-referrer';
       img.alt = '';
 
-      const path = url.replace(/^https?:\/\//, '');
-      img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(path);
+      const path = (url || '').replace(/^https?:\/\//, '');
+      img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(path || 'theunitedstates.io/does-not-exist');
 
       img.addEventListener('error', function onErr(){
         img.removeEventListener('error', onErr);
@@ -120,16 +140,33 @@
       return img;
     }
 
-    function cardHTML(m){
+    function cardHTML(m, promisesFor) {
+      const site = m.url ? `<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>` : '';
+      const promises = promisesFor[m.bioguide] || [];
+      const promisesHtml = promises.length
+        ? promises.map(p => `
+            <div class="promise-item">
+              <div><strong>${p.title || "Promise"}</strong></div>
+              <div class="muted">${p.summary || ""}</div>
+              ${p.source ? `<div><a href="${p.source}" target="_blank" rel="noopener">source ↗</a></div>` : ""}
+            </div>
+          `).join('')
+        : `<div class="empty">No promises tracked yet.</div>`;
+
       return `
         <div class="card">
           <div class="image-wrap"></div>
           <h3>${m.official_full}</h3>
-          <div class="muted">
-            ${m.chamber === "sen" ? "Senator" : "Representative"} · ${m.state}${m.district ? ("-" + m.district) : ""}
+          <div class="meta">
+            <span class="pill">${m.chamber === "sen" ? "Senator" : "Representative"}</span>
+            <span class="pill">${m.state}${m.district ? ("-" + m.district) : ""}</span>
+            ${m.party ? `<span class="pill">${m.party}</span>` : ""}
           </div>
-          <div class="muted">${m.party || ""}</div>
-          ${m.url ? `<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>` : ""}
+          ${site}
+          <div class="promises">
+            <div class="muted">Promises</div>
+            ${promisesHtml}
+          </div>
         </div>
       `;
     }
@@ -137,10 +174,14 @@
     function attachImages(members, mount){
       const cards = mount.querySelectorAll('.card');
       members.forEach((m, i) => {
-        const wrap = cards[cards.length - members.length + i].querySelector('.image-wrap');
-        if (m.photo) wrap.appendChild(buildHeadshot(m.photo));
-        else wrap.appendChild(buildHeadshot('https://placehold.co/450x550?text=No+Photo'));
+        const wrap = cards[i].querySelector('.image-wrap');
+        wrap.appendChild(buildHeadshot(m.photo));
       });
+    }
+
+    function renderList(arr, mount, promises){
+      mount.innerHTML = arr.map(m => cardHTML(m, promises)).join('');
+      attachImages(arr, mount);
     }
 
     function filterFn(q){
@@ -152,85 +193,48 @@
         .includes(needle);
     }
 
-    // Section controller with pagination
-    function makeSectionController({data, mount, moreBtn, sentinel}){
-      let filtered = data.slice();
-      let index = 0;
-
-      function clear(){
-        mount.innerHTML = '';
-        index = 0;
-        moreBtn.disabled = false;
-      }
-
-      function renderNext(count){
-        if (index >= filtered.length) {
-          moreBtn.disabled = true;
-          return;
-        }
-        const slice = filtered.slice(index, index + count);
-        const html  = slice.map(cardHTML).join('');
-        mount.insertAdjacentHTML('beforeend', html);
-        attachImages(slice, mount);
-        index += slice.length;
-        if (index >= filtered.length) moreBtn.disabled = true;
-      }
-
-      function applyFilter(fn){
-        filtered = data.filter(fn);
-        clear();
-        renderNext(FIRST_BATCH);
-      }
-
-      // Button fallback
-      moreBtn.addEventListener('click', () => renderNext(NEXT_BATCH));
-
-      // Infinite scroll: when sentinel appears, load more
-      if ('IntersectionObserver' in window) {
-        const io = new IntersectionObserver((entries) => {
-          entries.forEach(e => {
-            if (e.isIntersecting && !moreBtn.disabled) renderNext(NEXT_BATCH);
-          });
-        }, { rootMargin: '800px 0px' });
-        io.observe(sentinel);
-      }
-
-      // initial
-      renderNext(FIRST_BATCH);
-
-      return { applyFilter, reset: () => { filtered = data.slice(); clear(); renderNext(FIRST_BATCH); } };
+    async function loadJSON(url){
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) throw new Error("Fetch failed " + r.status);
+      return r.json();
     }
 
     async function main(){
-      // Use GH Pages JSON; relative also works when hosted there
-      const res = await fetch("./members-current.json", { cache: 'no-store' });
-      const members = await res.json();
+      // Load members + optional promises file
+      const [members, promises] = await Promise.all([
+        loadJSON("./members-current.json"),
+        // If promises.json is missing, fall back to empty.
+        loadJSON("./promises.json").catch(()=> ({})),
+      ]);
 
-      const groups = {
-        sen: members.filter(m => m.chamber === "sen"),
-        rep: members.filter(m => m.chamber === "rep"),
-      };
+      // Populate state dropdown
+      const sel = document.getElementById('state');
+      sel.innerHTML = `<option value="">Select a state…</option>` +
+        STATES.map(([code,name]) => `<option value="${code}">${name}</option>`).join('');
 
-      const senCtl = makeSectionController({
-        data: groups.sen,
-        mount: document.getElementById('sen'),
-        moreBtn: document.getElementById('senMore'),
-        sentinel: document.getElementById('senSentinel'),
-      });
+      const senRoot = document.getElementById('sen');
+      const repRoot = document.getElementById('rep');
+      const q = document.getElementById('q');
 
-      const repCtl = makeSectionController({
-        data: groups.rep,
-        mount: document.getElementById('rep'),
-        moreBtn: document.getElementById('repMore'),
-        sentinel: document.getElementById('repSentinel'),
-      });
+      function update(){
+        const code = sel.value;
+        const f = filterFn(q.value);
+        if (!code){
+          senRoot.innerHTML = '<div class="muted">Select a state to see senators.</div>';
+          repRoot.innerHTML = '<div class="muted">Select a state to see representatives.</div>';
+          return;
+        }
+        const sen = members.filter(m => m.chamber === "sen" && m.state === code).filter(f);
+        const rep = members.filter(m => m.chamber === "rep" && m.state === code).filter(f);
+        renderList(sen, senRoot, promises);
+        renderList(rep, repRoot, promises);
+      }
 
-      const input = document.getElementById("q");
-      input.addEventListener("input", () => {
-        const f = filterFn(input.value);
-        senCtl.applyFilter(f);
-        repCtl.applyFilter(f);
-      });
+      sel.addEventListener('change', update);
+      q.addEventListener('input', update);
+
+      // Initial state (empty)
+      update();
     }
 
     main();
