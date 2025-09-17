@@ -6,77 +6,74 @@
   <title>Civic Index — Who’s in Office</title>
   <style>
     :root{
-      --bg:#0b0d12; --fg:#e6e9ef; --muted:#a7b0c0;
-      --card:#111522; --b:#1b2236; --accent:#8ab4ff;
+      --bg:#0b0d12; --panel:#0f1424; --card:#11182a; --ink:#e7ecf6; --muted:#a7b0c0;
+      --line:#1b2236; --accent:#9cc0ff;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; background:var(--bg); color:var(--fg);
-      font-family:system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--bg); color:var(--ink);
     }
 
-    /* Full-bleed container so it can fill inside iframes/themes */
-    .wrap{
-      width:100%;
-      max-width:1400px;
-      margin:0 auto;
-      padding:24px 20px;
+    /* Full-width, but keep comfy max for readability inside WordPress iframe too */
+    .wrap{max-width:1200px; margin:0 auto; padding:24px 20px}
+
+    .badge{display:inline-block; font-size:12px; letter-spacing:.2px;
+      padding:6px 10px; border:1px solid var(--line); border-radius:999px;
+      color:#dbe6ff; background:#10162b; margin-bottom:12px;
     }
 
-    .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-    .badge{
-      display:inline-block; padding:4px 10px; border:1px solid #2a3556;
-      border-radius:999px; color:#dbe6ff; background:#10162b; font-size:12px
-    }
-    h1{margin:10px 0 14px; font-size:clamp(22px, 2.6vw, 34px)}
+    h1{margin:0 0 16px; font-size:28px; line-height:1.2}
+    h2{margin:24px 0 8px; font-size:18px; color:#d9e3f5}
 
-    label{font-size:14px; color:var(--muted)}
-    select, input[type="text"]{
-      padding:10px 12px; border-radius:10px; border:1px solid #2a3556;
-      background:#10162b; color:var(--fg); outline:none
+    .controls{
+      display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+      margin:12px 0 6px;
     }
-    select{min-width:190px}
-    .hint{color:var(--muted); font-size:13px; margin-top:8px}
 
-    .section{margin-top:20px}
-    .section h2{margin:18px 0 8px; font-size:clamp(18px,2vw,22px)}
+    input[type="search"]{
+      flex:1 1 360px; min-width:220px;
+      padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+      background:#10162b; color:var(--ink); outline:none;
+    }
+    .counts{font-size:12px; color:var(--muted)}
+
+    .panel{
+      background:var(--panel); border:1px solid var(--line);
+      border-radius:14px; padding:16px;
+    }
 
     .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-      gap:12px;
-      margin-top:10px
+      display:grid; gap:14px;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      margin-top:12px;
     }
+
     .card{
-      background:var(--card); border:1px solid var(--b);
-      border-radius:14px; padding:12px; min-height:100%;
-      display:flex; flex-direction:column; gap:10px;
+      background:var(--card); border:1px solid var(--line);
+      border-radius:14px; overflow:hidden; display:flex; flex-direction:column;
     }
-    .muted{color:var(--muted)}
-    .name{font-weight:600; line-height:1.2}
-    .links{margin-top:auto}
+
+    /* image */
+    .thumb{
+      width:100%; aspect-ratio: 9/11; object-fit:cover; display:block;
+      background:#0f1424; border-bottom:1px solid var(--line);
+    }
+
+    .body{padding:12px}
+    .name{font-weight:600; margin:2px 0 6px}
+    .muted{color:var(--muted); font-size:13px; margin:2px 0}
+    .links{margin-top:10px; font-size:13px}
     .links a{color:var(--accent); text-decoration:none}
     .links a:hover{text-decoration:underline}
 
-    img.thumb{
-      width:100%; aspect-ratio:9/11; object-fit:cover;
-      border-radius:10px; border:1px solid var(--b);
-      background:#0f1424;
-    }
+    .section{margin-top:18px}
+    .empty{color:var(--muted); padding:16px}
 
-    /* simple skeleton while loading */
-    .skeleton{
-      background:linear-gradient(90deg,#141a2b 25%,#182033 37%,#141a2b 63%);
-      background-size:400% 100%;
-      animation:shine 1.2s ease-in-out infinite;
-    }
-    @keyframes shine { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-    /* make it breathe a bit on very small screens */
-    @media (max-width:520px){
+    /* make it breathe edge-to-edge on very small frames */
+    @media (max-width:560px){
       .wrap{padding:16px 12px}
-      select{width:100%}
     }
   </style>
 </head>
@@ -85,155 +82,151 @@
     <span class="badge">Live directory (auto-refreshed)</span>
     <h1>Who’s in Public Office — U.S. Congress</h1>
 
-    <div class="row" style="margin:6px 0 12px">
-      <div>
-        <label for="state">Choose your state</label><br/>
-        <select id="state">
-          <option value="">— Select —</option>
-        </select>
+    <div class="panel">
+      <div class="controls">
+        <input id="q" type="search" placeholder="Search name, state, party, district…" />
+        <div class="counts" id="counts"></div>
       </div>
-      <div>
-        <label for="q">Filter by name / party / district</label><br/>
-        <input id="q" type="text" placeholder="e.g., Murkowski, D, 3…" />
+
+      <div class="section">
+        <h2>Senate</h2>
+        <div id="sen" class="grid"></div>
+        <div class="empty" id="sen-empty" hidden>No matches in the Senate.</div>
       </div>
-    </div>
-    <div class="hint">Pick a state to load its Senators and Representatives. Photos lazy-load; a placeholder appears if an image is unavailable.</div>
 
-    <div class="section">
-      <h2>Senate</h2>
-      <div id="sen" class="grid"></div>
-    </div>
-
-    <div class="section">
-      <h2>House</h2>
-      <div id="rep" class="grid"></div>
+      <div class="section">
+        <h2>House</h2>
+        <div id="rep" class="grid"></div>
+        <div class="empty" id="rep-empty" hidden>No matches in the House.</div>
+      </div>
     </div>
   </div>
 
   <script>
-  // Tiny inline SVG placeholder (dark silhouette)
-  const PLACEHOLDER =
-    'data:image/svg+xml;utf8,' +
-    encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 550">
-        <rect width="100%" height="100%" fill="#0f1424"/>
-        <circle cx="225" cy="190" r="80" fill="#1b2236"/>
-        <rect x="90" y="300" width="270" height="180" rx="20" fill="#1b2236"/>
-      </svg>`);
+    // ---------- image fallback helpers ----------
+    const PLACEHOLDER =
+      'data:image/svg+xml;utf8,' + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 550">
+          <rect width="100%" height="100%" fill="#0f1424"/>
+          <circle cx="225" cy="190" r="80" fill="#1b2236"/>
+          <rect x="90" y="300" width="270" height="180" rx="20" fill="#1b2236"/>
+        </svg>
+      `);
 
-  const S = {
-    sen: document.getElementById('sen'),
-    rep: document.getElementById('rep'),
-    stateSel: document.getElementById('state'),
-    q: document.getElementById('q')
-  };
+    function buildImageHTML(member) {
+      const id = member.bioguide || "";
+      // Primary URL is already provided by fetch step; otherwise build it:
+      const primary = member.photo || (id ? `https://theunitedstates.io/images/congress/450x550/${id}.jpg` : "");
+      const mirror  = id ? `https://unitedstates.github.io/images/congress/450x550/${id}.jpg` : "";
 
-  // Card renderer with lazy image + fallback
-  const card = (m) => `
-    <div class="card">
-      <img class="thumb" loading="lazy"
-           src="${PLACEHOLDER}"
-           data-src="${m.photo || ''}"
-           alt="${m.official_full || ''}"
-           onerror="this.onerror=null;this.src='${PLACEHOLDER}'" />
-      <div class="name">${m.official_full || ''}</div>
-      <div class="muted">${m.chamber === 'sen' ? 'Senator' : 'Representative'} · ${m.state}${m.district ? ('-' + m.district) : ''}</div>
-      <div class="muted">${m.party || ''}</div>
-      <div class="links">
-        ${m.url ? `<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>` : ''}
-      </div>
-    </div>
-  `;
+      // We set src to placeholder, then flip to data-src after insert (lazy-ish).
+      // onerror chain tries mirror, then placeholder.
+      const onErrPrimary = mirror
+        ? `if(!this.dataset.mirror){this.dataset.mirror=1;this.src='${mirror}';}else{this.onerror=null;this.src='${PLACEHOLDER}';}`
+        : `this.onerror=null;this.src='${PLACEHOLDER}';`;
 
-  function render(list, el){
-    el.innerHTML = list.map(card).join('');
-    // swap data-src → src for lazy load after insertion
-    const imgs = el.querySelectorAll('img[data-src]');
-    imgs.forEach(img => {
-      const real = img.getAttribute('data-src');
-      if (real) img.src = real;
-      img.removeAttribute('data-src');
-    });
-  }
+      return `
+        <img class="thumb" loading="lazy" referrerpolicy="no-referrer"
+             src="${PLACEHOLDER}" data-src="${primary || PLACEHOLDER}"
+             alt="${(member.official_full || '').replace(/"/g,'&quot;')}"
+             onerror="${onErrPrimary}">
+      `;
+    }
 
-  function skeleton(el, count=8){
-    el.innerHTML = Array.from({length:count}).map(() => `
+    // ---------- card / render ----------
+    const card = (m) => `
       <div class="card">
-        <div class="thumb skeleton"></div>
-        <div class="skeleton" style="height:14px; width:70%; border-radius:6px"></div>
-        <div class="skeleton" style="height:12px; width:55%; border-radius:6px"></div>
-        <div class="skeleton" style="height:12px; width:35%; border-radius:6px"></div>
-      </div>`).join('');
-  }
+        ${buildImageHTML(m)}
+        <div class="body">
+          <div class="name">${m.official_full || ""}</div>
+          <div class="muted">
+            ${m.chamber === "sen" ? "Senator" : "Representative"} · ${m.state}${m.district ? ("-" + m.district) : ""}
+          </div>
+          <div class="muted">${m.party || ""}</div>
+          <div class="links">
+            ${m.url ? `<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>` : ""}
+          </div>
+        </div>
+      </div>
+    `;
 
-  // Load state index for dropdown
-  async function loadStateIndex(){
-    const res = await fetch('./api/states/index.json', {cache:'no-store'});
-    if (!res.ok) throw new Error('Failed to load state index');
-    const states = await res.json();
-    states.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.state;
-      opt.textContent = s.state;
-      S.stateSel.appendChild(opt);
-    });
-  }
-
-  // Fetch members for a state and render
-  async function loadState(st){
-    if (!st){
-      S.sen.innerHTML = '';
-      S.rep.innerHTML = '';
-      return;
+    function hydrateImages(rootEl){
+      const imgs = rootEl.querySelectorAll('img[data-src]');
+      imgs.forEach(img => {
+        const real = img.getAttribute('data-src');
+        if (real) img.src = real;
+        img.removeAttribute('data-src');
+        img.addEventListener('error', () => { img.src = PLACEHOLDER; }, { once:true });
+      });
     }
-    skeleton(S.sen); skeleton(S.rep);
 
-    const res = await fetch(`./api/states/${encodeURIComponent(st)}.json`, {cache:'no-store'});
-    if (!res.ok){
-      S.sen.innerHTML = '<div class="muted">Could not load Senate.</div>';
-      S.rep.innerHTML = '<div class="muted">Could not load House.</div>';
-      return;
+    function render(list, el, emptyEl){
+      el.innerHTML = list.map(card).join("");
+      emptyEl.hidden = list.length !== 0;
+      hydrateImages(el);
     }
-    const data = await res.json();
-    window.__STATE_MEMBERS__ = {
-      sen: data.sen || [],
-      rep: data.rep || []
-    };
-    // initial render (unfiltered)
-    render(window.__STATE_MEMBERS__.sen, S.sen);
-    render(window.__STATE_MEMBERS__.rep, S.rep);
-  }
 
-  // Text filter
-  function applyFilter(){
-    const q = (S.q.value || '').trim().toLowerCase();
-    const filt = (m) => ([
-      m.official_full, m.state, m.party, (m.district||'')
-    ].join(' ').toLowerCase().includes(q));
+    // ---------- main ----------
+    async function main(){
+      const res = await fetch("./members-current.json", { cache: "no-store" });
+      const members = await res.json();
 
-    const src = window.__STATE_MEMBERS__ || {sen:[], rep:[]};
-    render(src.sen.filter(filt), S.sen);
-    render(src.rep.filter(filt), S.rep);
-  }
+      const groups = {
+        sen: members.filter(m => m.chamber === "sen"),
+        rep: members.filter(m => m.chamber === "rep"),
+      };
 
-  // Wire events
-  S.stateSel.addEventListener('change', e => loadState(e.target.value));
-  S.q.addEventListener('input', () => applyFilter());
+      const els = {
+        sen: document.getElementById("sen"),
+        rep: document.getElementById("rep"),
+        senEmpty: document.getElementById("sen-empty"),
+        repEmpty: document.getElementById("rep-empty"),
+        q: document.getElementById("q"),
+        counts: document.getElementById("counts"),
+      };
 
-  // Boot
-  (async function init(){
-    try{
-      await loadStateIndex();
-      // Optional: preselect based on URL hash e.g. #AK
-      const hashState = (location.hash || '').replace('#','').toUpperCase();
-      if (hashState){
-        S.stateSel.value = hashState;
-        await loadState(hashState);
+      const filterer = (q) => (m) => {
+        const hay = [
+          m.official_full, m.first, m.last, m.party, m.state, m.chamber,
+          (m.district || "").toString()
+        ].join(" ").toLowerCase();
+        return hay.includes(q);
+      };
+
+      function updateCounts(list){
+        const senC = list.filter(m => m.chamber === "sen").length;
+        const repC = list.filter(m => m.chamber === "rep").length;
+        els.counts.textContent = `${senC} senators · ${repC} representatives · ${list.length} total`;
       }
-    }catch(err){
-      console.error(err);
+
+      // initial render
+      render(groups.sen, els.sen, els.senEmpty);
+      render(groups.rep, els.rep, els.repEmpty);
+      updateCounts(members);
+
+      // search
+      els.q.addEventListener("input", (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        if (!q){
+          render(groups.sen, els.sen, els.senEmpty);
+          render(groups.rep, els.rep, els.repEmpty);
+          updateCounts(members);
+          return;
+        }
+        const filtered = members.filter(filterer(q));
+        render(filtered.filter(m=>m.chamber==="sen"), els.sen, els.senEmpty);
+        render(filtered.filter(m=>m.chamber==="rep"), els.rep, els.repEmpty);
+        updateCounts(filtered);
+      });
     }
-  })();
+
+    main().catch(err => {
+      console.error(err);
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<div style="color:#ffb4b4;padding:16px">Failed to load roster. Please try again later.</div>`
+      );
+    });
   </script>
 </body>
 </html>
