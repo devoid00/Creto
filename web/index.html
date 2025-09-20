@@ -5,98 +5,117 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Civic Index — Who’s in Office</title>
   <style>
+    /* ===== Light, friendly palette ===== */
     :root{
-      --bg:#0b0d12; --ink:#e7ecf6; --muted:#a7b0c0;
-      --line:#1b2236; --accent:#9cc0ff;
+      --bg:#f7fafc;              /* page background */
+      --ink:#1a202c;             /* primary text */
+      --muted:#5f6b7a;           /* secondary text */
+      --line:#e6edf3;            /* subtle borders */
+      --panel:#ffffff;           /* panel/card bg */
+      --accent:#4f7cff;          /* primary accent (happy blue) */
+      --accent-2:#ff72b6;        /* playful pink for small touches */
+      --radius:14px;
+      --shadow: 0 10px 24px rgba(0,0,0,.06), 0 2px 6px rgba(0,0,0,.04);
+      --shadow-hover: 0 16px 32px rgba(0,0,0,.10), 0 3px 10px rgba(0,0,0,.06);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background:var(--bg); color:var(--ink);
     }
 
-    .creto-wrap{max-width:1200px; margin:0 auto; padding:clamp(24px,6vh,64px) 20px}
+    .wrap{max-width:1200px; margin:0 auto; padding:clamp(24px,6vh,64px) 20px}
 
-    .badge{display:inline-block; font-size:12px; letter-spacing:.2px;
-      padding:6px 10px; border:1px solid rgba(156,192,255,.28); border-radius:999px;
-      color:#dbe6ff; background:rgba(16,22,43,.55); margin-bottom:12px;
+    /* Header bits */
+    .badge{
+      display:inline-block; font-size:12px; letter-spacing:.2px;
+      padding:6px 10px; border:1px solid var(--line); border-radius:999px;
+      color:#2b4eff; background:#eef3ff; margin-bottom:12px;
+    }
+    h1{margin:0 0 8px; font-size:clamp(24px,3vw,34px); line-height:1.15}
+    .sub a{color:var(--accent); text-decoration:none}
+    .sub a:hover{text-decoration:underline}
+
+    /* Panel */
+    .panel{
+      background:var(--panel); border:1px solid var(--line);
+      border-radius:var(--radius); padding:16px; box-shadow:var(--shadow);
     }
 
-    h1{margin:0 0 8px; font-size:clamp(24px,3vw,34px); line-height:1.15;
-      color:#eef3ff; text-shadow:0 1px 0 rgba(0,0,0,.35);
-    }
-    h2{margin:24px 0 8px; font-size:18px; color:#d9e3f5}
-
-    .cosmic-panel{
-      background:linear-gradient(180deg,rgba(16,22,43,.78),rgba(16,22,43,.6));
-      border:1px solid rgba(156,192,255,.20);
-      border-radius:16px;
-      box-shadow:0 20px 60px rgba(8,12,22,.6), inset 0 1px 0 rgba(255,255,255,.04);
-      backdrop-filter:blur(10px) saturate(115%);
-      -webkit-backdrop-filter:blur(10px) saturate(115%);
-      padding:clamp(14px,2.5vw,20px);
-    }
-
-    .creto-controls{
-      display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:12px 0 6px;
-    }
+    /* Controls */
+    .controls{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:12px 0 6px}
     input[type="search"]{
       flex:1 1 360px; min-width:220px;
-      padding:10px 12px; border-radius:10px; border:1px solid rgba(156,192,255,.22);
-      background:rgba(16,22,43,.65); color:var(--ink); outline:none;
-      transition:border-color .15s,box-shadow .15s,background .15s;
+      padding:12px 14px; border-radius:12px; border:1px solid var(--line);
+      background:#f5f8fc; color:var(--ink); outline:none;
+      transition:border-color .15s, box-shadow .15s, background .15s;
     }
+    input[type="search"]::placeholder{ color:#97a6b5; }
     input[type="search"]:focus{
-      border-color:rgba(156,192,255,.45);
-      box-shadow:0 0 0 2px rgba(156,192,255,.45),0 0 30px rgba(124,155,255,.25);
-      background:rgba(16,22,43,.8);
+      border-color:#cbd9ff; background:#ffffff;
+      box-shadow: 0 0 0 3px rgba(79,124,255,.15);
     }
     .counts{font-size:12px; color:var(--muted)}
 
-    .grid{display:grid; gap:14px;
-      grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+    /* Grid & cards */
+    .grid{
+      display:grid; gap:16px;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
       margin-top:12px;
     }
-
     .person-card{
-      background:linear-gradient(180deg,rgba(17,24,42,.9),rgba(17,24,42,.7));
-      border:1px solid rgba(156,192,255,.18);
+      background:var(--panel); border:1px solid var(--line);
       border-radius:16px; overflow:hidden; display:flex; flex-direction:column;
-      transition:transform .2s ease, box-shadow .2s ease;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      box-shadow: var(--shadow);
     }
     .person-card:hover{
-      transform:translateY(-2px);
-      box-shadow:0 8px 28px rgba(0,0,0,.35);
+      transform: translateY(-3px);
+      border-color:#dfe8ff;
+      box-shadow: var(--shadow-hover);
     }
 
     .person-thumb{
-      width:100%; aspect-ratio:9/11; object-fit:cover; display:block;
-      background:#0f1424; border-bottom:1px solid var(--line);
+      width:100%; aspect-ratio: 9/11; object-fit:cover; display:block;
+      background:#f1f5fb; border-bottom:1px solid var(--line);
     }
-
     .person-body{padding:12px}
-    .person-name{font-weight:600; margin:2px 0 6px}
+    .person-name{font-weight:700; margin:2px 0 6px}
     .person-meta{color:var(--muted); font-size:13px; margin:2px 0}
     .person-links{margin-top:10px; font-size:13px}
     .person-links a{color:var(--accent); text-decoration:none}
     .person-links a:hover{text-decoration:underline}
 
     .section{margin-top:18px}
+    .section h2{font-size:18px; color:#2a3340; margin:0 0 8px}
     .empty{color:var(--muted); padding:16px}
-    @media (max-width:560px){ .creto-wrap{padding:16px 12px} }
+
+    @media (max-width:560px){ .wrap{padding:16px 12px} }
+
+    /* Optional dark fallback if user prefers */
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0b0d12; --panel:#0f1424; --ink:#e7ecf6; --muted:#a7b0c0; --line:#1b2236;
+        --shadow: 0 8px 22px rgba(0,0,0,.35);
+        --shadow-hover: 0 14px 30px rgba(0,0,0,.45);
+      }
+      .badge{color:#dbe6ff; background:#10162b}
+      input[type="search"]{background:#10162b}
+      input[type="search"]:focus{box-shadow:0 0 0 3px rgba(79,124,255,.25)}
+    }
   </style>
 </head>
 <body>
-  <div class="creto-wrap">
+  <div class="wrap">
     <span class="badge">Live directory (auto-refreshed)</span>
     <h1>Who’s in Public Office — U.S. Congress</h1>
-    <div class="person-meta" style="margin:8px 0 16px">
-      <a href="./votes.html" style="color:var(--accent); text-decoration:none">→ Explore Congressional votes</a>
+    <div class="sub" style="margin:6px 0 14px">
+      <a href="./votes.html">→ Explore Congressional votes</a>
     </div>
 
-    <div class="cosmic-panel">
-      <div class="creto-controls">
+    <div class="panel">
+      <div class="controls">
         <input id="q" type="search" placeholder="Search name, state, party, district…" />
         <div class="counts" id="counts"></div>
       </div>
@@ -116,22 +135,24 @@
   </div>
 
   <script>
+    // ---------- image fallback helpers ----------
     const PLACEHOLDER =
       'data:image/svg+xml;utf8,' + encodeURIComponent(`
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 550">
-          <rect width="100%" height="100%" fill="#0f1424"/>
-          <circle cx="225" cy="190" r="80" fill="#1b2236"/>
-          <rect x="90" y="300" width="270" height="180" rx="20" fill="#1b2236"/>
+          <rect width="100%" height="100%" fill="#f1f5fb"/>
+          <circle cx="225" cy="190" r="80" fill="#e3eaf4"/>
+          <rect x="90" y="300" width="270" height="180" rx="20" fill="#e3eaf4"/>
         </svg>
       `);
 
-    function buildImageHTML(member){
+    function buildImageHTML(member) {
       const id = member.bioguide || "";
       const primary = member.photo || (id ? `https://theunitedstates.io/images/congress/450x550/${id}.jpg` : "");
       const mirror  = id ? `https://unitedstates.github.io/images/congress/450x550/${id}.jpg` : "";
       const onErrPrimary = mirror
         ? `if(!this.dataset.mirror){this.dataset.mirror=1;this.src='${mirror}';}else{this.onerror=null;this.src='${PLACEHOLDER}';}`
         : `this.onerror=null;this.src='${PLACEHOLDER}';`;
+
       return `
         <img class="person-thumb" loading="lazy" referrerpolicy="no-referrer"
              src="${PLACEHOLDER}" data-src="${primary || PLACEHOLDER}"
@@ -140,6 +161,7 @@
       `;
     }
 
+    // ---------- card / render ----------
     const card = (m) => `
       <div class="person-card">
         ${buildImageHTML(m)}
@@ -158,56 +180,80 @@
 
     function hydrateImages(rootEl){
       const imgs = rootEl.querySelectorAll('img[data-src]');
-      imgs.forEach(img=>{
-        const real=img.getAttribute('data-src');
-        if(real) img.src=real;
+      imgs.forEach(img => {
+        const real = img.getAttribute('data-src');
+        if (real) img.src = real;
         img.removeAttribute('data-src');
-        img.addEventListener('error',()=>{img.src=PLACEHOLDER;},{once:true});
+        img.addEventListener('error', () => { img.src = PLACEHOLDER; }, { once:true });
       });
     }
-    function render(list,el,emptyEl){
-      el.innerHTML=list.map(card).join("");
-      emptyEl.hidden=list.length!==0;
+
+    function render(list, el, emptyEl){
+      el.innerHTML = list.map(card).join("");
+      emptyEl.hidden = list.length !== 0;
       hydrateImages(el);
     }
 
+    // ---------- main ----------
     async function main(){
-      const res=await fetch("./members-current.json",{cache:"no-store"});
-      const members=await res.json();
-      const groups={sen:members.filter(m=>m.chamber==="sen"),rep:members.filter(m=>m.chamber==="rep")};
-      const els={
-        sen:document.getElementById("sen"),rep:document.getElementById("rep"),
-        senEmpty:document.getElementById("sen-empty"),repEmpty:document.getElementById("rep-empty"),
-        q:document.getElementById("q"),counts:document.getElementById("counts"),
+      const res = await fetch("./members-current.json", { cache: "no-store" });
+      const members = await res.json();
+
+      const groups = {
+        sen: members.filter(m => m.chamber === "sen"),
+        rep: members.filter(m => m.chamber === "rep"),
       };
-      const filterer=(q)=>(m)=>{
-        const hay=[m.official_full,m.first,m.last,m.party,m.state,m.chamber,(m.district||"").toString()].join(" ").toLowerCase();
+
+      const els = {
+        sen: document.getElementById("sen"),
+        rep: document.getElementById("rep"),
+        senEmpty: document.getElementById("sen-empty"),
+        repEmpty: document.getElementById("rep-empty"),
+        q: document.getElementById("q"),
+        counts: document.getElementById("counts"),
+      };
+
+      const filterer = (q) => (m) => {
+        const hay = [
+          m.official_full, m.first, m.last, m.party, m.state, m.chamber,
+          (m.district || "").toString()
+        ].join(" ").toLowerCase();
         return hay.includes(q);
       };
+
       function updateCounts(list){
-        const senC=list.filter(m=>m.chamber==="sen").length;
-        const repC=list.filter(m=>m.chamber==="rep").length;
-        els.counts.textContent=`${senC} senators · ${repC} representatives · ${list.length} total`;
+        const senC = list.filter(m => m.chamber === "sen").length;
+        const repC = list.filter(m => m.chamber === "rep").length;
+        els.counts.textContent = `${senC} senators · ${repC} representatives · ${list.length} total`;
       }
-      render(groups.sen,els.sen,els.senEmpty);
-      render(groups.rep,els.rep,els.repEmpty);
+
+      // initial render
+      render(groups.sen, els.sen, els.senEmpty);
+      render(groups.rep, els.rep, els.repEmpty);
       updateCounts(members);
-      els.q.addEventListener("input",(e)=>{
-        const q=e.target.value.trim().toLowerCase();
-        if(!q){
-          render(groups.sen,els.sen,els.senEmpty);
-          render(groups.rep,els.rep,els.repEmpty);
-          updateCounts(members); return;
+
+      // search
+      els.q.addEventListener("input", (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        if (!q){
+          render(groups.sen, els.sen, els.senEmpty);
+          render(groups.rep, els.rep, els.repEmpty);
+          updateCounts(members);
+          return;
         }
-        const filtered=members.filter(filterer(q));
-        render(filtered.filter(m=>m.chamber==="sen"),els.sen,els.senEmpty);
-        render(filtered.filter(m=>m.chamber==="rep"),els.rep,els.repEmpty);
+        const filtered = members.filter(filterer(q));
+        render(filtered.filter(m=>m.chamber==="sen"), els.sen, els.senEmpty);
+        render(filtered.filter(m=>m.chamber==="rep"), els.rep, els.repEmpty);
         updateCounts(filtered);
       });
     }
-    main().catch(err=>{
+
+    main().catch(err => {
       console.error(err);
-      document.body.insertAdjacentHTML("beforeend",`<div style="color:#ffb4b4;padding:16px">Failed to load roster. Please try again later.</div>`);
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<div style="color:#b00020;padding:16px">Failed to load roster. Please try again later.</div>`
+      );
     });
   </script>
 </body>

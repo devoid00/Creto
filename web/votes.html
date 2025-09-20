@@ -6,67 +6,64 @@
   <title>U.S. Congressional Votes</title>
   <style>
     :root{
-      --bg:#0b0d12; --panel:#0f1424; --ink:#e7ecf6; --muted:#a7b0c0;
-      --line:#1b2236; --accent:#9cc0ff; --radius:16px;
+      --bg:#f7fafc; --panel:#ffffff; --ink:#1a202c; --muted:#5f6b7a;
+      --line:#e6edf3; --accent:#4f7cff; --radius:16px;
+      --shadow: 0 10px 24px rgba(0,0,0,.06), 0 2px 6px rgba(0,0,0,.04);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink)}
     .wrap{max-width:1200px; margin:0 auto; padding:clamp(24px,6vh,64px) 20px}
-    .badge{display:inline-block; font-size:12px; padding:6px 10px; border:1px solid rgba(156,192,255,.28); border-radius:999px; color:#dbe6ff; background:rgba(16,22,43,.55); margin-bottom:12px}
-    h1{margin:0 0 10px; font-size:clamp(24px,3vw,34px); line-height:1.2; color:#eef3ff; text-shadow:0 1px 0 rgba(0,0,0,.35)}
-    .panel{
-      background:linear-gradient(180deg,rgba(16,22,43,.78),rgba(16,22,43,.6));
-      border:1px solid rgba(156,192,255,.20);
-      border-radius:var(--radius);
-      padding:16px;
-      box-shadow:0 20px 60px rgba(8,12,22,.6), inset 0 1px 0 rgba(255,255,255,.04);
-      backdrop-filter:blur(10px) saturate(115%); -webkit-backdrop-filter:blur(10px) saturate(115%);
-    }
+    .badge{display:inline-block; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; color:#2b4eff; background:#eef3ff; margin-bottom:12px}
+    h1{margin:0 0 10px; font-size:clamp(24px,3vw,34px); line-height:1.2}
+    .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow)}
     .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-    select,input{padding:10px 12px; border-radius:12px; border:1px solid rgba(156,192,255,.22); background:#10162b; color:var(--ink); outline:none}
-    select:focus,input:focus{border-color:rgba(156,192,255,.45); box-shadow:0 0 0 2px rgba(156,192,255,.45),0 0 30px rgba(124,155,255,.25)}
+    select,input{padding:12px 14px; border-radius:12px; border:1px solid var(--line); background:#f5f8fc; color:var(--ink); outline:none}
+    select:focus, input:focus{border-color:#cbd9ff; background:#fff; box-shadow:0 0 0 3px rgba(79,124,255,.15)}
     input[type="search"]{flex:1 1 320px; min-width:220px}
     .muted{color:var(--muted); font-size:13px}
     table{width:100%; border-collapse:collapse; margin-top:12px}
     th, td{border-top:1px solid var(--line); padding:10px 8px; text-align:left; vertical-align:top}
-    tr:hover{background:#10162b}
-    .pill{display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); cursor:pointer}
-    .drawer{position:fixed; top:0; right:0; bottom:0; width:min(560px,100%); transform:translateX(100%); transition:transform .25s ease; background:linear-gradient(180deg, rgba(16,22,43,.95), rgba(16,22,43,.86)); border-left:1px solid rgba(156,192,255,.20); box-shadow:0 0 40px rgba(0,0,0,.6); z-index:50; display:flex; flex-direction:column}
+    tr:hover{background:#f5f8fc}
+    .pill{display:inline-block; font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); cursor:pointer; background:#fff}
+    .pill.active{border-color:#cbd9ff; color:#2b4eff; background:#eef3ff}
+    .back a{color:var(--accent); text-decoration:none}
+    .back a:hover{text-decoration:underline}
+
+    /* Drawer */
+    .drawer{position:fixed; top:0; right:0; bottom:0; width:min(560px,100%); transform:translateX(100%); transition:transform .25s ease; background:#ffffff; border-left:1px solid var(--line); box-shadow:0 0 40px rgba(0,0,0,.15); z-index:50; display:flex; flex-direction:column}
     .drawer.open{transform:translateX(0)}
     .drawer header{padding:16px; border-bottom:1px solid var(--line)}
     .drawer .content{padding:16px; overflow:auto}
     .member{display:grid; grid-template-columns: 1fr auto; gap:8px; padding:8px 0; border-top:1px solid var(--line)}
     .score{font-weight:600}
     @media (max-width:560px){ .wrap{padding:16px 12px} }
+
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b0d12; --panel:#0f1424; --ink:#e7ecf6; --muted:#a7b0c0; --line:#1b2236; }
+      tr:hover{ background:#10162b; }
+      .drawer{ background:#0f1424; }
+    }
   </style>
 </head>
 <body>
 <div class="wrap">
   <span class="badge">Votes Explorer • alpha</span>
   <h1>U.S. Congressional Votes</h1>
-  <div class="muted" style="margin:6px 0 12px">
-    <a href="./" style="color:var(--accent); text-decoration:none">← Back to directory</a>
+  <div class="back" style="margin:6px 0 12px">
+    <a href="./">← Back to directory</a>
   </div>
 
   <div class="panel">
     <div class="row" style="margin-bottom:8px">
       <label>Congress
-        <select id="cong">
-          <option value="119">119th</option>
-        </select>
+        <select id="cong"><option value="119">119th</option></select>
       </label>
       <label>Chamber
-        <select id="chamber">
-          <option value="house">House</option>
-          <option value="senate">Senate</option>
-        </select>
+        <select id="chamber"><option value="house">House</option><option value="senate">Senate</option></select>
       </label>
       <label>Session
-        <select id="sess">
-          <option value="1">1st</option>
-          <option value="2">2nd</option>
-        </select>
+        <select id="sess"><option value="1">1st</option><option value="2">2nd</option></select>
       </label>
       <input id="q" type="search" placeholder="Search bill number, title, question…" />
       <span class="muted" id="counts"></span>
@@ -103,9 +100,9 @@
     <div class="row" style="justify-content:space-between">
       <div>
         <div class="muted" id="d-meta"></div>
-        <div id="d-title" style="font-weight:600; margin-top:4px"></div>
+        <div id="d-title" style="font-weight:700; margin-top:4px"></div>
       </div>
-      <button id="d-close" style="padding:8px 10px; border-radius:10px; background:#10162b; color:var(--ink); border:1px solid var(--line)">Close</button>
+      <button id="d-close" style="padding:8px 10px; border-radius:10px; background:#f5f8fc; color:var(--ink); border:1px solid var(--line)">Close</button>
     </div>
   </header>
   <div class="content">
@@ -218,9 +215,16 @@ els.dClose.addEventListener('click', ()=> {
   els.drawer.setAttribute('aria-hidden','true');
 });
 
+/* UI toggles */
+function toggleChip(el, flag){
+  flag = !flag;
+  el.classList.toggle('active', flag);
+  return flag;
+}
+els.chipProc.addEventListener('click', ()=>{ filters.proc = toggleChip(els.chipProc, filters.proc); render(); });
+
 [els.cong, els.chamber, els.sess].forEach(el => el.addEventListener('change', render));
 els.q.addEventListener('input', render);
-els.chipProc.addEventListener('click', ()=>{ filters.proc=!filters.proc; els.chipProc.style.borderColor = filters.proc ? 'var(--accent)' : 'var(--line)'; render(); });
 
 render().catch(console.error);
 </script>
