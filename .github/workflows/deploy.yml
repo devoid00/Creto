@@ -5,7 +5,8 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: "23 5 * * *"   # nightly UTC (optional)
+    - cron: "23 5 * * *"   # nightly UTC
+    - cron: "15 6,12,18 * * *"  # 3x daily UTC
 
 permissions:
   contents: read
@@ -37,6 +38,9 @@ jobs:
 
       - name: Build static API
         run: python data-job/build_api.py
+
+      - name: Build vote data
+        run: python data-job/fetch_votes.py
 
       - name: Verify site files exist
         run: |

@@ -1,0 +1,225 @@
+<!-- web/votes.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>U.S. Congressional Votes</title>
+  <style>
+    :root{
+      --bg:#0b0d12; --panel:#0f1424; --card:#11182a; --ink:#e7ecf6; --muted:#a7b0c0;
+      --line:#1b2236; --accent:#9cc0ff; --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink)}
+    .wrap{max-width:1200px; margin:0 auto; padding:24px 20px}
+    .badge{display:inline-block; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; color:#dbe6ff; background:#10162b; margin-bottom:12px}
+    h1{margin:0 0 10px; font-size:28px; line-height:1.2}
+    .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    select,input{padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#10162b; color:var(--ink); outline:none}
+    input[type="search"]{flex:1 1 320px; min-width:220px}
+    .muted{color:var(--muted); font-size:13px}
+    table{width:100%; border-collapse:collapse; margin-top:12px}
+    th, td{border-top:1px solid var(--line); padding:10px 8px; text-align:left; vertical-align:top}
+    tr:hover{background:#10162b}
+    .pill{display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted)}
+    .drawer{position:fixed; top:0; right:0; bottom:0; width:min(560px,100%); transform:translateX(100%); transition:transform .25s ease; background:var(--panel); border-left:1px solid var(--line); box-shadow:0 0 40px rgba(0,0,0,.5); z-index:50; display:flex; flex-direction:column}
+    .drawer.open{transform:translateX(0)}
+    .drawer header{padding:16px; border-bottom:1px solid var(--line)}
+    .drawer .content{padding:16px; overflow:auto}
+    .member{display:grid; grid-template-columns: 1fr auto; gap:8px; padding:8px 0; border-top:1px solid var(--line)}
+    .score{font-weight:600}
+    @media (max-width:560px){ .wrap{padding:16px 12px} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Votes Explorer • alpha</span>
+  <h1>U.S. Congressional Votes</h1>
+  <div class="panel">
+    <div class="row" style="margin-bottom:8px">
+      <label>Congress
+        <select id="cong">
+          <option value="119">119th</option>
+        </select>
+      </label>
+      <label>Chamber
+        <select id="chamber">
+          <option value="house">House</option>
+          <option value="senate">Senate</option>
+        </select>
+      </label>
+      <label>Session
+        <select id="sess">
+          <option value="1">1st</option>
+          <option value="2">2nd</option>
+        </select>
+      </label>
+      <input id="q" type="search" placeholder="Search bill number, title, question…" />
+      <span class="muted" id="counts"></span>
+    </div>
+
+    <div class="row" style="margin-bottom:4px">
+      <span class="pill" id="chip-close">Close votes</span>
+      <span class="pill" id="chip-breaks">Party-line breaks</span>
+      <span class="pill" id="chip-proc">Procedural</span>
+    </div>
+
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th style="width:90px">Date</th>
+          <th style="width:90px">Roll</th>
+          <th style="width:120px">Bill</th>
+          <th>Title / Question</th>
+          <th style="width:150px">Result</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <p class="muted" style="margin-top:10px">
+    Data from official Senate & House vote records. Member-level detail loads on demand.
+  </p>
+</div>
+
+<!-- Drawer -->
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <header>
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <div class="muted" id="d-meta"></div>
+        <div id="d-title" style="font-weight:600; margin-top:4px"></div>
+      </div>
+      <button id="d-close" style="padding:8px 10px; border-radius:10px; background:#10162b; color:var(--ink); border:1px solid var(--line)">Close</button>
+    </div>
+  </header>
+  <div class="content">
+    <div id="d-summary" class="muted"></div>
+    <div id="d-members" style="margin-top:10px"></div>
+  </div>
+</aside>
+
+<script>
+const els = {
+  cong: document.getElementById('cong'),
+  chamber: document.getElementById('chamber'),
+  sess: document.getElementById('sess'),
+  q: document.getElementById('q'),
+  counts: document.getElementById('counts'),
+  rows: document.getElementById('rows'),
+  chipClose: document.getElementById('chip-close'),
+  chipBreaks: document.getElementById('chip-breaks'),
+  chipProc: document.getElementById('chip-proc'),
+  drawer: document.getElementById('drawer'),
+  dClose: document.getElementById('d-close'),
+  dMeta: document.getElementById('d-meta'),
+  dTitle: document.getElementById('d-title'),
+  dSummary: document.getElementById('d-summary'),
+  dMembers: document.getElementById('d-members'),
+};
+
+let cache = new Map();
+let filters = { close:false, breaks:false, proc:false };
+
+function dataPath(cong, chamber, sess){
+  return `./data/votes-${cong}-${chamber}-${sess}.json`;
+}
+function voteDetailPath(cong, chamber, sess, roll){
+  return `./data/vote-${cong}-${chamber}-${sess}-${roll}.json`;
+}
+
+async function loadList(){
+  const cong = els.cong.value, chamber = els.chamber.value, sess = els.sess.value;
+  const key = `${cong}-${chamber}-${sess}`;
+  if (!cache.has(key)){
+    const res = await fetch(dataPath(cong, chamber, sess), { cache: 'no-store' });
+    if (!res.ok){ cache.set(key, []); } else { cache.set(key, await res.json()); }
+  }
+  return cache.get(key);
+}
+
+function applyFilter(list){
+  const q = els.q.value.trim().toLowerCase();
+  let L = list;
+  if (q){
+    L = L.filter(r => (`${r.bill_number} ${r.title} ${r.question}`).toLowerCase().includes(q));
+  }
+  // Optional chips:
+  if (filters.close){
+    // We don't have margins here; approximate by result text containing "by 1/2 vote" is unreliable.
+    // Leave as no-op for now; future: compute from totals in detail JSON and cache it.
+  }
+  if (filters.proc){
+    const procWords = ['On the Motion to Proceed','Cloture','Agree to the Motion to Table','Order the Previous Question'];
+    L = L.filter(r => procWords.some(w => (r.question||'').includes(w)));
+  }
+  els.counts.textContent = `${L.length} votes`;
+  return L;
+}
+
+function rowHTML(r){
+  const date = r.date || '';
+  const roll = r.rollcall;
+  const bill = r.bill_number || '—';
+  const result = r.result || '';
+  const title = (r.title && r.title.trim()) ? r.title : r.question || '';
+  return `<tr data-roll="${roll}">
+    <td>${date}</td>
+    <td>${roll}</td>
+    <td>${bill}</td>
+    <td style="max-width:620px">${title}</td>
+    <td>${result}</td>
+  </tr>`;
+}
+
+async function render(){
+  const list = await loadList();
+  const L = applyFilter(list);
+  els.rows.innerHTML = L.map(rowHTML).join('');
+  // bind click
+  els.rows.querySelectorAll('tr').forEach(tr=>{
+    tr.addEventListener('click', ()=> openDrawer(parseInt(tr.dataset.roll,10)));
+  });
+}
+
+async function openDrawer(roll){
+  const cong = els.cong.value, chamber = els.chamber.value, sess = els.sess.value;
+  const res = await fetch(voteDetailPath(cong, chamber, sess, roll), { cache:'no-store' });
+  if (!res.ok){ return; }
+  const v = await res.json();
+  els.dMeta.textContent = `${v.congress}th • ${v.chamber} • session ${v.session} • Roll ${v.rollcall} • ${v.date}`;
+  els.dTitle.textContent = v.title || v.question || '';
+  els.dSummary.innerHTML = `
+    <div>Result: <strong>${v.result}</strong></div>
+    <div class="muted">Totals — Yea ${v.totals.yea}, Nay ${v.totals.nay}, Present ${v.totals.present}, Not Voting ${v.totals.nv}</div>
+  `;
+  // members
+  const rows = v.members.map(m => {
+    const name = [m.last_name, m.first_name].filter(Boolean).join(', ');
+    return `<div class="member">
+      <div>${name} <span class="muted">(${m.party}-${m.state}${m.district?('-'+m.district):''})</span></div>
+      <div class="score">${m.vote}</div>
+    </div>`;
+  }).join('');
+  els.dMembers.innerHTML = rows || '<div class="muted">No member data.</div>';
+  els.drawer.classList.add('open');
+  els.drawer.setAttribute('aria-hidden','false');
+}
+els.dClose.addEventListener('click', ()=> {
+  els.drawer.classList.remove('open');
+  els.drawer.setAttribute('aria-hidden','true');
+});
+
+// inputs
+[els.cong, els.chamber, els.sess].forEach(el => el.addEventListener('change', render));
+els.q.addEventListener('input', render);
+els.chipProc.addEventListener('click', ()=>{ filters.proc=!filters.proc; els.chipProc.style.borderColor = filters.proc ? 'var(--accent)' : 'var(--line)'; render(); });
+
+render().catch(console.error);
+</script>
+</body>
+</html>
