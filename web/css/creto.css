@@ -1,0 +1,99 @@
+/* ===== Creto UI – bright, friendly theme ===== */
+:root{
+  --bg:#f7fafc; --panel:#ffffff; --ink:#1a202c; --muted:#5f6b7a;
+  --line:#e6edf3; --accent:#4f7cff; --radius:16px;
+  --shadow: 0 10px 24px rgba(0,0,0,.06), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-hover: 0 16px 32px rgba(0,0,0,.10), 0 3px 10px rgba(0,0,0,.06);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg); color:var(--ink);
+}
+
+.wrap{max-width:1200px; margin:0 auto; padding:clamp(24px,6vh,64px) 20px}
+h1{margin:0 0 8px; font-size:clamp(24px,3vw,34px); line-height:1.15}
+a{color:var(--accent)}
+a:hover{text-decoration:underline}
+
+.badge{
+  display:inline-block; font-size:12px; padding:6px 10px; border:1px solid var(--line);
+  border-radius:999px; color:#2b4eff; background:#eef3ff; margin-bottom:12px;
+}
+
+.panel{
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--radius); padding:16px; box-shadow:var(--shadow);
+}
+
+.controls{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:12px 0 6px}
+.counts,.muted{font-size:13px; color:var(--muted)}
+
+input[type="search"], select{
+  padding:12px 14px; border-radius:12px; border:1px solid var(--line);
+  background:#f5f8fc; color:var(--ink); outline:none;
+  transition:border-color .15s, box-shadow .15s, background .15s;
+}
+input[type="search"]::placeholder{color:#97a6b5}
+input[type="search"]:focus, select:focus{
+  border-color:#cbd9ff; background:#fff; box-shadow:0 0 0 3px rgba(79,124,255,.15);
+}
+
+.section{margin-top:18px}
+.section h2{font-size:18px; color:#2a3340; margin:0 0 8px}
+.empty{color:var(--muted); padding:16px}
+
+@media (max-width:560px){ .wrap{padding:16px 12px} }
+
+/* ===== Directory cards (support both naming schemes) ===== */
+.grid{
+  display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  margin-top:12px;
+}
+
+/* containers */
+.person-card, .card{
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:16px; overflow:hidden; display:flex; flex-direction:column;
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  box-shadow:var(--shadow);
+}
+.person-card:hover, .card:hover{ transform:translateY(-3px); border-color:#dfe8ff; box-shadow:var(--shadow-hover) }
+
+/* image */
+.person-thumb, .thumb{
+  width:100%; aspect-ratio:9/11; object-fit:cover; display:block;
+  background:#f1f5fb; border-bottom:1px solid var(--line);
+}
+
+/* body/text */
+.person-body, .body{ padding:12px }
+.person-name, .name{ font-weight:700; margin:2px 0 6px }
+.person-meta, .muted{ color:var(--muted) }
+.person-links, .links{ margin-top:10px; font-size:13px }
+.person-links a, .links a{ text-decoration:none }
+
+/* ===== Votes table & drawer ===== */
+table{width:100%; border-collapse:collapse; margin-top:12px}
+th,td{border-top:1px solid var(--line); padding:10px 8px; text-align:left; vertical-align:top}
+tr:hover{background:#f5f8fc}
+
+.pill{
+  display:inline-block; font-size:12px; padding:4px 10px; border-radius:999px;
+  border:1px solid var(--line); color:var(--muted); cursor:pointer; background:#fff;
+}
+.pill.active{border-color:#cbd9ff; color:#2b4eff; background:#eef3ff}
+
+.drawer{
+  position:fixed; top:0; right:0; bottom:0; width:min(560px,100%);
+  transform:translateX(100%); transition:transform .25s ease;
+  background:#ffffff; border-left:1px solid var(--line);
+  box-shadow:0 0 40px rgba(0,0,0,.15); z-index:50; display:flex; flex-direction:column;
+}
+.drawer.open{transform:translateX(0)}
+.drawer header{padding:16px; border-bottom:1px solid var(--line)}
+.drawer .content{padding:16px; overflow:auto}
+.member{display:grid; grid-template-columns:1fr auto; gap:8px; padding:8px 0; border-top:1px solid var(--line)}
+.score{font-weight:700}
