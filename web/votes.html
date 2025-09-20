@@ -32,6 +32,48 @@
     .member{display:grid; grid-template-columns: 1fr auto; gap:8px; padding:8px 0; border-top:1px solid var(--line)}
     .score{font-weight:600}
     @media (max-width:560px){ .wrap{padding:16px 12px} }
+    /* --- Cosmic/glass polish to match index.html --- */
+    .wrap{ margin-top:clamp(24px,6vh,64px); }
+    .panel{
+    background: linear-gradient(180deg, rgba(16,22,43,.78), rgba(16,22,43,.6));
+    border:1px solid rgba(156,192,255,.20);
+    border-radius:16px;
+    box-shadow: 0 20px 60px rgba(8,12,22,.6), inset 0 1px 0 rgba(255,255,255,.04);
+    backdrop-filter: blur(10px) saturate(115%);
+    -webkit-backdrop-filter: blur(10px) saturate(115%);
+    padding:clamp(14px,2.5vw,20px);
+    }
+    .badge{
+    background: rgba(16,22,43,.55);
+    border:1px solid rgba(156,192,255,.28);
+    color:#dbe6ff;
+    }
+    h1{
+    color:#eef3ff;
+    text-shadow:0 1px 0 rgba(0,0,0,.35);
+    font-size:clamp(24px,3vw,34px);
+    line-height:1.15;
+    margin-bottom:6px;
+    }
+    select, input{
+    border:1px solid rgba(156,192,255,.22);
+    background: rgba(16,22,43,.65);
+    border-radius:12px;
+    transition: box-shadow .15s, border-color .15s, background .15s;
+    }
+    select:focus, input:focus{
+    border-color: rgba(156,192,255,.45);
+    box-shadow: 0 0 0 2px rgba(156,192,255,.45), 0 0 30px rgba(124,155,255,.25);
+    background: rgba(16,22,43,.8);
+    outline:none;
+    }
+    tr:hover{ background:#10162b; }
+    .drawer{
+    background: linear-gradient(180deg, rgba(16,22,43,.95), rgba(16,22,43,.85));
+    border-left:1px solid rgba(156,192,255,.20);
+    box-shadow: 0 0 40px rgba(0,0,0,.6);
+    }
+
   </style>
 </head>
 <body>
