@@ -1,4 +1,3 @@
-<!-- web/votes.html -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,79 +6,49 @@
   <title>U.S. Congressional Votes</title>
   <style>
     :root{
-      --bg:#0b0d12; --panel:#0f1424; --card:#11182a; --ink:#e7ecf6; --muted:#a7b0c0;
-      --line:#1b2236; --accent:#9cc0ff; --radius:14px;
+      --bg:#0b0d12; --panel:#0f1424; --ink:#e7ecf6; --muted:#a7b0c0;
+      --line:#1b2236; --accent:#9cc0ff; --radius:16px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink)}
-    .wrap{max-width:1200px; margin:0 auto; padding:24px 20px}
-    .badge{display:inline-block; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; color:#dbe6ff; background:#10162b; margin-bottom:12px}
-    h1{margin:0 0 10px; font-size:28px; line-height:1.2}
-    .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
+    .wrap{max-width:1200px; margin:0 auto; padding:clamp(24px,6vh,64px) 20px}
+    .badge{display:inline-block; font-size:12px; padding:6px 10px; border:1px solid rgba(156,192,255,.28); border-radius:999px; color:#dbe6ff; background:rgba(16,22,43,.55); margin-bottom:12px}
+    h1{margin:0 0 10px; font-size:clamp(24px,3vw,34px); line-height:1.2; color:#eef3ff; text-shadow:0 1px 0 rgba(0,0,0,.35)}
+    .panel{
+      background:linear-gradient(180deg,rgba(16,22,43,.78),rgba(16,22,43,.6));
+      border:1px solid rgba(156,192,255,.20);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 20px 60px rgba(8,12,22,.6), inset 0 1px 0 rgba(255,255,255,.04);
+      backdrop-filter:blur(10px) saturate(115%); -webkit-backdrop-filter:blur(10px) saturate(115%);
+    }
     .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-    select,input{padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#10162b; color:var(--ink); outline:none}
+    select,input{padding:10px 12px; border-radius:12px; border:1px solid rgba(156,192,255,.22); background:#10162b; color:var(--ink); outline:none}
+    select:focus,input:focus{border-color:rgba(156,192,255,.45); box-shadow:0 0 0 2px rgba(156,192,255,.45),0 0 30px rgba(124,155,255,.25)}
     input[type="search"]{flex:1 1 320px; min-width:220px}
     .muted{color:var(--muted); font-size:13px}
     table{width:100%; border-collapse:collapse; margin-top:12px}
     th, td{border-top:1px solid var(--line); padding:10px 8px; text-align:left; vertical-align:top}
     tr:hover{background:#10162b}
-    .pill{display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted)}
-    .drawer{position:fixed; top:0; right:0; bottom:0; width:min(560px,100%); transform:translateX(100%); transition:transform .25s ease; background:var(--panel); border-left:1px solid var(--line); box-shadow:0 0 40px rgba(0,0,0,.5); z-index:50; display:flex; flex-direction:column}
+    .pill{display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); cursor:pointer}
+    .drawer{position:fixed; top:0; right:0; bottom:0; width:min(560px,100%); transform:translateX(100%); transition:transform .25s ease; background:linear-gradient(180deg, rgba(16,22,43,.95), rgba(16,22,43,.86)); border-left:1px solid rgba(156,192,255,.20); box-shadow:0 0 40px rgba(0,0,0,.6); z-index:50; display:flex; flex-direction:column}
     .drawer.open{transform:translateX(0)}
     .drawer header{padding:16px; border-bottom:1px solid var(--line)}
     .drawer .content{padding:16px; overflow:auto}
     .member{display:grid; grid-template-columns: 1fr auto; gap:8px; padding:8px 0; border-top:1px solid var(--line)}
     .score{font-weight:600}
     @media (max-width:560px){ .wrap{padding:16px 12px} }
-    /* --- Cosmic/glass polish to match index.html --- */
-    .wrap{ margin-top:clamp(24px,6vh,64px); }
-    .panel{
-    background: linear-gradient(180deg, rgba(16,22,43,.78), rgba(16,22,43,.6));
-    border:1px solid rgba(156,192,255,.20);
-    border-radius:16px;
-    box-shadow: 0 20px 60px rgba(8,12,22,.6), inset 0 1px 0 rgba(255,255,255,.04);
-    backdrop-filter: blur(10px) saturate(115%);
-    -webkit-backdrop-filter: blur(10px) saturate(115%);
-    padding:clamp(14px,2.5vw,20px);
-    }
-    .badge{
-    background: rgba(16,22,43,.55);
-    border:1px solid rgba(156,192,255,.28);
-    color:#dbe6ff;
-    }
-    h1{
-    color:#eef3ff;
-    text-shadow:0 1px 0 rgba(0,0,0,.35);
-    font-size:clamp(24px,3vw,34px);
-    line-height:1.15;
-    margin-bottom:6px;
-    }
-    select, input{
-    border:1px solid rgba(156,192,255,.22);
-    background: rgba(16,22,43,.65);
-    border-radius:12px;
-    transition: box-shadow .15s, border-color .15s, background .15s;
-    }
-    select:focus, input:focus{
-    border-color: rgba(156,192,255,.45);
-    box-shadow: 0 0 0 2px rgba(156,192,255,.45), 0 0 30px rgba(124,155,255,.25);
-    background: rgba(16,22,43,.8);
-    outline:none;
-    }
-    tr:hover{ background:#10162b; }
-    .drawer{
-    background: linear-gradient(180deg, rgba(16,22,43,.95), rgba(16,22,43,.85));
-    border-left:1px solid rgba(156,192,255,.20);
-    box-shadow: 0 0 40px rgba(0,0,0,.6);
-    }
-
   </style>
 </head>
 <body>
 <div class="wrap">
   <span class="badge">Votes Explorer • alpha</span>
   <h1>U.S. Congressional Votes</h1>
+  <div class="muted" style="margin:6px 0 12px">
+    <a href="./" style="color:var(--accent); text-decoration:none">← Back to directory</a>
+  </div>
+
   <div class="panel">
     <div class="row" style="margin-bottom:8px">
       <label>Congress
@@ -179,7 +148,7 @@ async function loadList(){
   const key = `${cong}-${chamber}-${sess}`;
   if (!cache.has(key)){
     const res = await fetch(dataPath(cong, chamber, sess), { cache: 'no-store' });
-    if (!res.ok){ cache.set(key, []); } else { cache.set(key, await res.json()); }
+    cache.set(key, res.ok ? await res.json() : []);
   }
   return cache.get(key);
 }
@@ -189,11 +158,6 @@ function applyFilter(list){
   let L = list;
   if (q){
     L = L.filter(r => (`${r.bill_number} ${r.title} ${r.question}`).toLowerCase().includes(q));
-  }
-  // Optional chips:
-  if (filters.close){
-    // We don't have margins here; approximate by result text containing "by 1/2 vote" is unreliable.
-    // Leave as no-op for now; future: compute from totals in detail JSON and cache it.
   }
   if (filters.proc){
     const procWords = ['On the Motion to Proceed','Cloture','Agree to the Motion to Table','Order the Previous Question'];
@@ -222,7 +186,6 @@ async function render(){
   const list = await loadList();
   const L = applyFilter(list);
   els.rows.innerHTML = L.map(rowHTML).join('');
-  // bind click
   els.rows.querySelectorAll('tr').forEach(tr=>{
     tr.addEventListener('click', ()=> openDrawer(parseInt(tr.dataset.roll,10)));
   });
@@ -231,7 +194,7 @@ async function render(){
 async function openDrawer(roll){
   const cong = els.cong.value, chamber = els.chamber.value, sess = els.sess.value;
   const res = await fetch(voteDetailPath(cong, chamber, sess, roll), { cache:'no-store' });
-  if (!res.ok){ return; }
+  if (!res.ok) return;
   const v = await res.json();
   els.dMeta.textContent = `${v.congress}th • ${v.chamber} • session ${v.session} • Roll ${v.rollcall} • ${v.date}`;
   els.dTitle.textContent = v.title || v.question || '';
@@ -239,7 +202,6 @@ async function openDrawer(roll){
     <div>Result: <strong>${v.result}</strong></div>
     <div class="muted">Totals — Yea ${v.totals.yea}, Nay ${v.totals.nay}, Present ${v.totals.present}, Not Voting ${v.totals.nv}</div>
   `;
-  // members
   const rows = v.members.map(m => {
     const name = [m.last_name, m.first_name].filter(Boolean).join(', ');
     return `<div class="member">
@@ -256,7 +218,6 @@ els.dClose.addEventListener('click', ()=> {
   els.drawer.setAttribute('aria-hidden','true');
 });
 
-// inputs
 [els.cong, els.chamber, els.sess].forEach(el => el.addEventListener('change', render));
 els.q.addEventListener('input', render);
 els.chipProc.addEventListener('click', ()=>{ filters.proc=!filters.proc; els.chipProc.style.borderColor = filters.proc ? 'var(--accent)' : 'var(--line)'; render(); });
