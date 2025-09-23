@@ -149,6 +149,16 @@
         updateCounts(filtered);
       });
     }
+        // Prefill search from ?state=XY
+        const urlParams = new URLSearchParams(window.location.search);
+        const stateParam = urlParams.get('state');
+        if (stateParam) {
+          const st = stateParam.trim().toUpperCase();
+          // Some states are two-letter; your filter checks haystack text, so just set the input.
+          document.getElementById('q').value = st;
+          // Trigger the existing input handler to filter immediately
+          document.getElementById('q').dispatchEvent(new Event('input', { bubbles:true }));
+        }
 
     main().catch(err => {
       console.error(err);
