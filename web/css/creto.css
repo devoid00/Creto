@@ -206,3 +206,61 @@ tr:hover{ background:linear-gradient(90deg, rgba(79,124,255,.08), rgba(46,196,18
 @media (max-width:560px){
   .wrap{ padding:16px 12px }
 }
+/* === Fix home page scroll + hex map visibility === */
+.page-home .wrap { padding-bottom: 120px; }        /* room for long content */
+.hexmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.hexmap { margin: 0 auto; }                         /* keep centered when it fits */
+
+/* Make the hex grid size down on narrower screens so fewer tiles get clipped */
+@media (max-width: 1200px){ .hexmap{ --size:44px } }
+@media (max-width: 980px){  .hexmap{ --size:40px } }
+@media (max-width: 820px){  .hexmap{ --size:36px } }
+@media (max-width: 700px){  .hexmap{ --size:32px } }
+@media (max-width: 600px){  .hexmap{ --size:30px } }
+@media (max-width: 520px){  .hexmap{ --size:28px } }
+@media (max-width: 460px){  .hexmap{ --size:26px } }
+
+/* === Directory: compact, linear (two people per row), no heavy “cards” === */
+.page-directory .grid{
+  /* Exactly two columns when there’s room; one on small screens */
+  grid-template-columns: repeat(2, minmax(300px, 1fr));
+  gap: 14px;
+}
+@media (max-width: 720px){
+  .page-directory .grid{ grid-template-columns: 1fr; }
+}
+
+.page-directory .card{
+  /* turn the card into a skinny row */
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  gap: 12px;
+
+  /* “no card look”: let the colorful page BG through */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 12px;
+  padding: 8px;
+  transition: background .12s ease;
+}
+.page-directory .card:hover{
+  background: rgba(255,255,255,.35);                /* a little hover affordance */
+  backdrop-filter: blur(4px);
+}
+
+.page-directory .thumb{
+  width: 92px; aspect-ratio: 1/1; border: 1px solid var(--line);
+  border-radius: 10px; background: linear-gradient(180deg,#f3f7ff,#eff5ff);
+}
+.page-directory .body{ padding: 0; }
+.page-directory .name{ margin: 0 0 4px; }
+.page-directory .muted{ margin: 0; }
+.page-directory .links{ margin-top: 6px; }
+
+/* Keep nav on top of everything */
+.nav{ z-index: 1200; }
+
+/* Safety: avoid global horizontal clipping that can hide the right side of the hex map */
+body{ overflow-x: visible; }

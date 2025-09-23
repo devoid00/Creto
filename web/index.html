@@ -59,7 +59,8 @@
     @media (max-width: 600px){ .hexmap{ --size:34px } }
   </style>
 </head>
-<body>
+<body class="page-home">
+
 
   <!-- shared nav (injected from /nav.html) -->
   <div data-include="/nav.html"></div>
@@ -128,9 +129,8 @@
       <!-- Right: HEX map -->
       <div class="card">
         <h3>Or pick your state</h3>
-        <div class="hexmap" id="hexmap">
-          <!-- Each .hex is positioned to approximate the U.S. outline.
-               aria-disabled="true" are empty placeholders for shaping the map. -->
+       <div class="hexmap-wrap">
+          <div class="hexmap" id="hexmap">
           <!-- Row 1 -->
           <div class="hex" data-st="WA">WA</div><div class="hex" data-st="MT">MT</div><div class="hex" data-st="ND">ND</div><div class="hex" data-st="MN">MN</div><div class="hex" data-st="WI">WI</div><div class="hex" data-st="MI">MI</div><div class="hex" data-st="VT">VT</div><div class="hex" data-st="NH">NH</div><div class="hex" data-st="ME">ME</div>
           <!-- trailing blanks -->
@@ -147,6 +147,7 @@
           <div class="hex" data-st="AK">AK</div><div class="hex" data-st="HI">HI</div>
         </div>
         <div class="tiles-legend">Click a state to see its congressional delegation (inline).</div>
+      </div>
       </div>
     </div>
 
