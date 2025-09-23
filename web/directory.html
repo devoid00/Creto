@@ -4,15 +4,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Civic Index — Who’s in Office</title>
-  <!-- External CSS -->
-  <link rel="stylesheet" href="./css/creto.css" /> 
+  <!-- Global CSS (root-relative so it works from any page) -->
+  <link rel="stylesheet" href="/css/creto.css" />
 </head>
 <body>
+
+  <!-- shared nav -->
+  <div data-include="/nav.html"></div>
+
   <div class="wrap">
     <span class="badge">Live directory (auto-refreshed)</span>
     <h1>Who’s in Public Office — U.S. Congress</h1>
 
-    <!-- Added tiny nav link to Votes Explorer -->
     <div class="muted" style="margin:8px 0 16px">
       <a href="./votes.html" style="color:var(--accent); text-decoration:none">→ Explore Congressional votes</a>
     </div>
@@ -131,12 +134,9 @@
         els.counts.textContent = `${senC} senators · ${repC} representatives · ${list.length} total`;
       }
 
-      render(groups.sen, els.sen, els.senEmpty);
-      render(groups.rep, els.rep, els.repEmpty);
-      updateCounts(members);
-
-      els.q.addEventListener("input", (e) => {
-        const q = e.target.value.trim().toLowerCase();
+      // Attach search listener FIRST
+      els.q.addEventListener("input", () => {
+        const q = els.q.value.trim().toLowerCase();
         if (!q){
           render(groups.sen, els.sen, els.senEmpty);
           render(groups.rep, els.rep, els.repEmpty);
@@ -148,17 +148,20 @@
         render(filtered.filter(m=>m.chamber==="rep"), els.rep, els.repEmpty);
         updateCounts(filtered);
       });
+
+      // Prefill search from ?state=XY (after listener is attached)
+      const urlParams = new URLSearchParams(window.location.search);
+      const stateParam = urlParams.get('state');
+      if (stateParam) {
+        els.q.value = stateParam.trim().toUpperCase();
+        els.q.dispatchEvent(new Event('input', { bubbles:true }));
+      } else {
+        // initial render (no filter)
+        render(groups.sen, els.sen, els.senEmpty);
+        render(groups.rep, els.rep, els.repEmpty);
+        updateCounts(members);
+      }
     }
-        // Prefill search from ?state=XY
-        const urlParams = new URLSearchParams(window.location.search);
-        const stateParam = urlParams.get('state');
-        if (stateParam) {
-          const st = stateParam.trim().toUpperCase();
-          // Some states are two-letter; your filter checks haystack text, so just set the input.
-          document.getElementById('q').value = st;
-          // Trigger the existing input handler to filter immediately
-          document.getElementById('q').dispatchEvent(new Event('input', { bubbles:true }));
-        }
 
     main().catch(err => {
       console.error(err);
@@ -168,5 +171,8 @@
       );
     });
   </script>
+
+  <!-- partials loader for shared nav (keep at end of body) -->
+  <script src="/js/partials.js"></script>
 </body>
 </html>

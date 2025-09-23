@@ -4,14 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CREDO — A louder voice for the people</title>
-  <link rel="stylesheet" href="./css/creto.css" />
+  <!-- Global CSS (root-relative so it works from any page) -->
+  <link rel="stylesheet" href="/css/creto.css" />
   <style>
-    /* --- Home-only UI for hex map and inline results --- */
-    .nav{ position:sticky; top:0; z-index:10; backdrop-filter:saturate(120%) blur(8px); -webkit-backdrop-filter:saturate(120%) blur(8px); }
-    .nav-inner{ max-width:1200px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; }
-    .brand{ font-weight:800; letter-spacing:.5px }
-    .nav a{ text-decoration:none; margin-left:16px; color:var(--ink) }
-    .nav a:hover{ text-decoration:underline }
+    /* --- Home-only UI for hero, hex map, inline results --- */
 
     .hero-block{ background:rgba(255,255,255,.78); border:1px solid var(--line); border-radius:18px; padding:22px; box-shadow:var(--shadow); }
     .hero-title{ font-size:clamp(28px,3.6vw,40px); line-height:1.1; margin:0 0 8px }
@@ -64,20 +60,9 @@
   </style>
 </head>
 <body>
-  <!-- Global nav -->
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="brand">CRETO</div>
-      <div class="links">
-        <a href="./index.html">Home</a>
-        <a href="./directory.html">Directory</a>
-        <a href="./votes.html">Votes</a>
-        <a href="./promises.html">Promises</a>
-        <a href="./register.html">Register to Vote</a>
-        <a href="https://github.com/devoid00/Creto" target="_blank" rel="noopener">GitHub</a>
-      </div>
-    </div>
-  </div>
+
+  <!-- shared nav (injected from /nav.html) -->
+  <div data-include="/nav.html"></div>
 
   <div class="wrap">
     <!-- Hero -->
@@ -89,9 +74,9 @@
         Our vision: one day, measure how citizens feel about upcoming bills—before they pass.
       </p>
       <div class="cta-row">
-        <a class="cta" href="./directory.html">Explore Directory →</a>
-        <a class="cta" href="./votes.html">See Latest Votes →</a>
-        <a class="cta" href="./register.html">Register to Vote →</a>
+        <a class="cta" href="/directory.html">Explore Directory →</a>
+        <a class="cta" href="/votes.html">See Latest Votes →</a>
+        <a class="cta" href="/register.html">Register to Vote →</a>
       </div>
     </div>
 
@@ -135,7 +120,7 @@
         </div>
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap">
           <button id="gs-go" class="btn">Go →</button>
-          <a class="btn" href="./register.html">Register to Vote</a>
+          <a class="btn" href="/register.html">Register to Vote</a>
         </div>
         <div id="gs-msg" class="muted" style="margin-top:8px"></div>
       </div>
@@ -259,7 +244,7 @@
 
       async function ensureData(){
         if (MEMBERS) return MEMBERS;
-        const res = await fetch("./members-current.json", { cache: "no-store" });
+        const res = await fetch("/members-current.json", { cache: "no-store" });
         MEMBERS = await res.json();
         return MEMBERS;
       }
@@ -295,10 +280,13 @@
           showStateDelegation(st);
         }else{
           // candidates: send to promises page for now (future: inline elections view)
-          window.location.href = `./promises.html?state=${encodeURIComponent(st)}&mode=candidates`;
+          window.location.href = `/promises.html?state=${encodeURIComponent(st)}&mode=candidates`;
         }
       });
     })();
   </script>
+
+  <!-- partials loader for shared nav -->
+  <script src="/js/partials.js"></script>
 </body>
 </html>
