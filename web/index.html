@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CRETO — A louder voice for the people</title>
+  <title>CREDO — A louder voice for the people</title>
   <link rel="stylesheet" href="./css/creto.css" />
   <style>
-    /* Home-only polish */
+    /* --- Home-only UI for hex map and inline results --- */
     .nav{ position:sticky; top:0; z-index:10; backdrop-filter:saturate(120%) blur(8px); -webkit-backdrop-filter:saturate(120%) blur(8px); }
     .nav-inner{ max-width:1200px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; }
     .brand{ font-weight:800; letter-spacing:.5px }
@@ -26,26 +26,41 @@
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .row > * { flex: 1 1 200px; }
 
-    /* Tile map (compact, responsive) */
-    .us-tiles{ display:grid; grid-template-columns: repeat(12, minmax(28px, 1fr)); gap:6px; }
-    .tile{
-      position:relative; display:flex; align-items:center; justify-content:center;
-      aspect-ratio:1; border:1px solid rgba(255,255,255,.6); border-radius:10px;
-      background:rgba(255,255,255,.22); cursor:pointer; user-select:none;
-      font-size:12px; font-weight:700; color:#1f2a44;
-      transition: transform .1s ease, background .15s ease, border-color .15s ease;
+    /* === Responsive HEX MAP laid out in U.S. shape === */
+    .hexmap{ --size:48px; display:grid; grid-template-columns: repeat(19, var(--size)); gap:6px; justify-content:center; }
+    .hex {
+      width: var(--size); aspect-ratio: 1 / 1;
+      clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
+      background: rgba(255,255,255,.24);
+      border: 1px solid rgba(255,255,255,.6);
+      border-radius: 6px; /* mild soften */
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; font-weight:800; color:#1f2a44; user-select:none; cursor:pointer;
+      transition: transform .12s ease, background .15s ease, border-color .15s ease;
     }
-    .tile:hover{ transform:translateY(-2px); border-color:rgba(79,124,255,.6); background:rgba(255,255,255,.34); }
-    .tile[data-rgn="AK"], .tile[data-rgn="HI"]{ font-size:11px }
+    .hex:hover{ transform: translateY(-2px); background: rgba(255,255,255,.34); border-color: rgba(79,124,255,.6); }
+    .hex[aria-disabled="true"]{ visibility:hidden }
+
     .tiles-legend{ font-size:12px; color:var(--muted); margin-top:8px }
 
-    /* Mobile: stack */
-    @media (max-width: 900px){
-      .gs{ grid-template-columns: 1fr; }
+    /* Inline delegation panel */
+    .delegation {
+      margin-top:18px;
+      background:rgba(255,255,255,.78);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
     }
+    .delegation header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--line) }
+    .delegation .body { padding:14px 16px }
+    .delegation h2 { margin:0; font-size:18px }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--muted) }
+    .close-btn{ padding:8px 10px; border-radius:10px; background:#fff; color:var(--ink); border:1px solid var(--line); cursor:pointer }
 
-    /* Footer */
-    .footer{ margin-top:28px; font-size:13px; color:var(--muted) }
+    @media (max-width: 900px){ .gs{ grid-template-columns: 1fr; } .hexmap{ --size:40px } }
+    @media (max-width: 600px){ .hexmap{ --size:34px } }
   </style>
 </head>
 <body>
@@ -54,8 +69,8 @@
     <div class="nav-inner">
       <div class="brand">CRETO</div>
       <div class="links">
-        <a href="./home.html">Home</a>
-        <a href="./index.html">Directory</a>
+        <a href="./index.html">Home</a>
+        <a href="./directory.html">Directory</a>
         <a href="./votes.html">Votes</a>
         <a href="./promises.html">Promises</a>
         <a href="./register.html">Register to Vote</a>
@@ -74,13 +89,13 @@
         Our vision: one day, measure how citizens feel about upcoming bills—before they pass.
       </p>
       <div class="cta-row">
-        <a class="cta" href="./index.html">Explore Directory →</a>
+        <a class="cta" href="./directory.html">Explore Directory →</a>
         <a class="cta" href="./votes.html">See Latest Votes →</a>
         <a class="cta" href="./register.html">Register to Vote →</a>
       </div>
     </div>
 
-    <!-- Getting Started -->
+    <!-- Getting Started + Map -->
     <div class="gs">
       <!-- Left: interactive choices -->
       <div class="card">
@@ -125,64 +140,163 @@
         <div id="gs-msg" class="muted" style="margin-top:8px"></div>
       </div>
 
-      <!-- Right: interactive “map” (tile map) -->
+      <!-- Right: HEX map -->
       <div class="card">
         <h3>Or pick your state</h3>
-        <div class="us-tiles" id="us-tiles">
-          <!-- A compact tile grid covering 50 states + DC -->
+        <div class="hexmap" id="hexmap">
+          <!-- Each .hex is positioned to approximate the U.S. outline.
+               aria-disabled="true" are empty placeholders for shaping the map. -->
           <!-- Row 1 -->
-          <div class="tile" data-rgn="WA">WA</div><div class="tile" data-rgn="MT">MT</div><div class="tile" data-rgn="ND">ND</div><div class="tile" data-rgn="MN">MN</div><div class="tile" data-rgn="WI">WI</div><div class="tile" data-rgn="MI">MI</div><div class="tile" data-rgn="VT">VT</div><div class="tile" data-rgn="NH">NH</div><div class="tile" data-rgn="ME">ME</div><div class="tile" style="visibility:hidden"></div><div class="tile" style="visibility:hidden"></div><div class="tile" style="visibility:hidden"></div>
+          <div class="hex" data-st="WA">WA</div><div class="hex" data-st="MT">MT</div><div class="hex" data-st="ND">ND</div><div class="hex" data-st="MN">MN</div><div class="hex" data-st="WI">WI</div><div class="hex" data-st="MI">MI</div><div class="hex" data-st="VT">VT</div><div class="hex" data-st="NH">NH</div><div class="hex" data-st="ME">ME</div>
+          <!-- trailing blanks -->
+          <div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div>
           <!-- Row 2 -->
-          <div class="tile" data-rgn="OR">OR</div><div class="tile" data-rgn="ID">ID</div><div class="tile" data-rgn="SD">SD</div><div class="tile" data-rgn="IA">IA</div><div class="tile" data-rgn="IL">IL</div><div class="tile" data-rgn="IN">IN</div><div class="tile" data-rgn="OH">OH</div><div class="tile" data-rgn="PA">PA</div><div class="tile" data-rgn="NY">NY</div><div class="tile" data-rgn="MA">MA</div><div class="tile" data-rgn="CT">CT</div><div class="tile" data-rgn="RI">RI</div>
+          <div class="hex" data-st="OR">OR</div><div class="hex" data-st="ID">ID</div><div class="hex" data-st="SD">SD</div><div class="hex" data-st="IA">IA</div><div class="hex" data-st="IL">IL</div><div class="hex" data-st="IN">IN</div><div class="hex" data-st="OH">OH</div><div class="hex" data-st="PA">PA</div><div class="hex" data-st="NY">NY</div><div class="hex" data-st="MA">MA</div><div class="hex" data-st="CT">CT</div><div class="hex" data-st="RI">RI</div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div>
           <!-- Row 3 -->
-          <div class="tile" data-rgn="CA">CA</div><div class="tile" data-rgn="NV">NV</div><div class="tile" data-rgn="WY">WY</div><div class="tile" data-rgn="NE">NE</div><div class="tile" data-rgn="MO">MO</div><div class="tile" data-rgn="KY">KY</div><div class="tile" data-rgn="WV">WV</div><div class="tile" data-rgn="VA">VA</div><div class="tile" data-rgn="MD">MD</div><div class="tile" data-rgn="NJ">NJ</div><div class="tile" data-rgn="DE">DE</div><div class="tile" data-rgn="DC">DC</div>
+          <div class="hex" data-st="CA">CA</div><div class="hex" data-st="NV">NV</div><div class="hex" data-st="WY">WY</div><div class="hex" data-st="NE">NE</div><div class="hex" data-st="MO">MO</div><div class="hex" data-st="KY">KY</div><div class="hex" data-st="WV">WV</div><div class="hex" data-st="VA">VA</div><div class="hex" data-st="MD">MD</div><div class="hex" data-st="NJ">NJ</div><div class="hex" data-st="DE">DE</div><div class="hex" data-st="DC">DC</div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div>
           <!-- Row 4 -->
-          <div class="tile" data-rgn="AZ">AZ</div><div class="tile" data-rgn="UT">UT</div><div class="tile" data-rgn="CO">CO</div><div class="tile" data-rgn="KS">KS</div><div class="tile" data-rgn="AR">AR</div><div class="tile" data-rgn="TN">TN</div><div class="tile" data-rgn="NC">NC</div><div class="tile" data-rgn="SC">SC</div><div class="tile" data-rgn="DC" style="visibility:hidden"></div><div class="tile" data-rgn="DC" style="visibility:hidden"></div><div class="tile" data-rgn="DC" style="visibility:hidden"></div><div class="tile" data-rgn="DC" style="visibility:hidden"></div>
+          <div class="hex" data-st="AZ">AZ</div><div class="hex" data-st="UT">UT</div><div class="hex" data-st="CO">CO</div><div class="hex" data-st="KS">KS</div><div class="hex" data-st="AR">AR</div><div class="hex" data-st="TN">TN</div><div class="hex" data-st="NC">NC</div><div class="hex" data-st="SC">SC</div><div class="hex" data-st="DC" aria-disabled="true"></div><div class="hex" data-st="DC" aria-disabled="true"></div><div class="hex" data-st="DC" aria-disabled="true"></div><div class="hex" data-st="DC" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div>
           <!-- Row 5 -->
-          <div class="tile" data-rgn="NM">NM</div><div class="tile" data-rgn="OK">OK</div><div class="tile" data-rgn="TX">TX</div><div class="tile" data-rgn="LA">LA</div><div class="tile" data-rgn="MS">MS</div><div class="tile" data-rgn="AL">AL</div><div class="tile" data-rgn="GA">GA</div><div class="tile" data-rgn="FL">FL</div><div class="tile" data-rgn="DC" style="visibility:hidden"></div><div class="tile" data-rgn="DC" style="visibility:hidden"></div><div class="tile" data-rgn="DC" style="visibility:hidden"></div><div class="tile" data-rgn="DC" style="visibility:hidden"></div>
-          <!-- Row 6 (islands) -->
-          <div class="tile" data-rgn="AK">AK</div><div class="tile" data-rgn="HI">HI</div>
+          <div class="hex" data-st="NM">NM</div><div class="hex" data-st="OK">OK</div><div class="hex" data-st="TX">TX</div><div class="hex" data-st="LA">LA</div><div class="hex" data-st="MS">MS</div><div class="hex" data-st="AL">AL</div><div class="hex" data-st="GA">GA</div><div class="hex" data-st="FL">FL</div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div><div class="hex" aria-disabled="true"></div>
+          <!-- Row 6 (AK/HI) -->
+          <div class="hex" data-st="AK">AK</div><div class="hex" data-st="HI">HI</div>
         </div>
-        <div class="tiles-legend">Click a state to jump to its congressional delegation.</div>
+        <div class="tiles-legend">Click a state to see its congressional delegation (inline).</div>
       </div>
     </div>
 
-    <div class="footer">
+    <!-- Inline Delegation Panel (hidden until a state is picked) -->
+    <section id="delegation" class="delegation" hidden>
+      <header>
+        <h2 id="dg-title">Delegation</h2>
+        <div class="chips">
+          <span id="dg-counts" class="chip"></span>
+          <button id="dg-close" class="close-btn">Close</button>
+        </div>
+      </header>
+      <div class="body">
+        <div class="section">
+          <h2>Senate</h2>
+          <div id="dg-sen" class="grid"></div>
+          <div id="dg-sen-empty" class="muted" hidden>No senators found.</div>
+        </div>
+        <div class="section">
+          <h2>House</h2>
+          <div id="dg-rep" class="grid"></div>
+          <div id="dg-rep-empty" class="muted" hidden>No representatives found.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer" style="margin-top:28px; font-size:13px; color:var(--muted)">
       Powered by CRETO • Open data, simple insight. Questions? Open an issue on GitHub.
     </div>
   </div>
 
   <script>
-    // Simple router for "Get started"
+    // ===== Shared card renderer (re-using your card markup classes for consistency) =====
+    const PLACEHOLDER =
+      'data:image/svg+xml;utf8,' + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 550">
+          <rect width="100%" height="100%" fill="#eef3ff"/>
+          <circle cx="225" cy="190" r="80" fill="#e3ebf9"/>
+          <rect x="90" y="300" width="270" height="180" rx="20" fill="#e3ebf9"/>
+        </svg>`);
+
+    function buildImageHTML(m){
+      const id = m.bioguide || "";
+      const primary = m.photo || (id ? `https://theunitedstates.io/images/congress/450x550/${id}.jpg` : "");
+      const mirror  = id ? `https://unitedstates.github.io/images/congress/450x550/${id}.jpg` : "";
+      const onErrPrimary = mirror
+        ? `if(!this.dataset.mirror){this.dataset.mirror=1;this.src='${mirror}';}else{this.onerror=null;this.src='${PLACEHOLDER}';}`
+        : `this.onerror=null;this.src='${PLACEHOLDER}';`;
+      return `<img class="thumb" loading="lazy" referrerpolicy="no-referrer" src="${PLACEHOLDER}" data-src="${primary || PLACEHOLDER}" alt="${(m.official_full||'').replace(/"/g,'&quot;')}" onerror="${onErrPrimary}">`;
+    }
+    const card = (m) => `
+      <div class="card">
+        ${buildImageHTML(m)}
+        <div class="body">
+          <div class="name">${m.official_full || ""}</div>
+          <div class="muted">${m.chamber === "sen" ? "Senator" : "Representative"} · ${m.state}${m.district?("-"+m.district):""}</div>
+          <div class="muted">${m.party || ""}</div>
+          <div class="links">${m.url ? `<a href="${m.url}" target="_blank" rel="noopener">Official site ↗</a>` : ""}</div>
+        </div>
+      </div>`;
+
+    function hydrateImages(rootEl){
+      rootEl.querySelectorAll('img[data-src]').forEach(img=>{
+        const real = img.getAttribute('data-src');
+        if(real) img.src = real;
+        img.removeAttribute('data-src');
+        img.addEventListener('error', ()=>{ img.src = PLACEHOLDER; }, { once:true });
+      });
+    }
+
+    function render(list, el, emptyEl){
+      el.innerHTML = list.map(card).join("");
+      emptyEl.hidden = list.length !== 0;
+      hydrateImages(el);
+    }
+
+    // ===== Home logic: state selection without navigation =====
     (function(){
+      const tiles = document.getElementById('hexmap');
       const s = document.getElementById('gs-state');
       const i = document.getElementById('gs-intent');
       const go = document.getElementById('gs-go');
       const msg = document.getElementById('gs-msg');
 
-      function route(){
+      const panel = document.getElementById('delegation');
+      const title = document.getElementById('dg-title');
+      const counts = document.getElementById('dg-counts');
+      const sen = document.getElementById('dg-sen');
+      const rep = document.getElementById('dg-rep');
+      const senEmpty = document.getElementById('dg-sen-empty');
+      const repEmpty = document.getElementById('dg-rep-empty');
+      document.getElementById('dg-close').addEventListener('click', ()=> panel.hidden = true);
+
+      let MEMBERS = null; // cache
+
+      async function ensureData(){
+        if (MEMBERS) return MEMBERS;
+        const res = await fetch("./members-current.json", { cache: "no-store" });
+        MEMBERS = await res.json();
+        return MEMBERS;
+      }
+
+      function showStateDelegation(st){
+        const list = MEMBERS.filter(m => (m.state||"").toUpperCase() === st);
+        const senList = list.filter(m => m.chamber === "sen");
+        const repList = list.filter(m => m.chamber === "rep");
+        title.textContent = `${st} Delegation`;
+        counts.textContent = `${senList.length} Senators · ${repList.length} Representatives · ${list.length} total`;
+        render(senList, sen, senEmpty);
+        render(repList, rep, repEmpty);
+        panel.hidden = false;
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // Hex click → inline panel
+      tiles.addEventListener('click', async (e)=>{
+        const hex = e.target.closest('.hex');
+        if(!hex || hex.getAttribute('aria-disabled') === 'true') return;
+        const st = hex.dataset.st;
+        await ensureData();
+        showStateDelegation(st);
+      });
+
+      // “Get started” Go → inline (record) or navigate (candidates)
+      go.addEventListener('click', async ()=>{
         const st = s.value, intent = i.value;
         msg.textContent = "";
-        if(!st || !intent){
-          msg.textContent = "Choose your state and an option to continue.";
-          return;
-        }
+        if(!st || !intent){ msg.textContent = "Choose your state and an option to continue."; return; }
         if(intent === 'record'){
-          // Go to Directory and pre-filter by state (handled by index.html snippet below)
-          window.location.href = `./index.html?state=${encodeURIComponent(st)}`;
-        }else if(intent === 'candidates'){
-          // Placeholder page you can build later
+          await ensureData();
+          showStateDelegation(st);
+        }else{
+          // candidates: send to promises page for now (future: inline elections view)
           window.location.href = `./promises.html?state=${encodeURIComponent(st)}&mode=candidates`;
         }
-      }
-      go.addEventListener('click', route);
-
-      // Tile map → same behavior as picking a state for "record"
-      const tiles = document.getElementById('us-tiles');
-      tiles.addEventListener('click', (e)=>{
-        const t = e.target.closest('.tile');
-        if(!t || !t.dataset.rgn) return;
-        window.location.href = `./index.html?state=${encodeURIComponent(t.dataset.rgn)}`;
       });
     })();
   </script>
